@@ -1,10 +1,11 @@
 # Bug Report
 
 - Date: `2026-04-22`
-- Viewpoint: `10 動作確認 - 単機能`
+- Viewpoint: `10 動作確認 - 単機能` (関連派生観点: `DV-20260422-01`)
 - Severity: `High`
 - Page: `https://hotel-example-site.takeyaqa.dev/ja/reserve.html?plan-id=0`
 - Title: `確認画面から戻るとメール連絡選択状態と email 入力値の整合が崩れる`
+- Finding ID: `F-20260422-02`
 
 ## Summary
 
@@ -33,3 +34,8 @@
 
 - Playwright failure context:
   `test-results/tests-generated-viewpoint--f054c----単機能-確認画面から戻っても入力内容が保持される/error-context.md`
+
+## Related
+
+- Hypothesis: `H-20260422-01` (ユーザー操作後の状態整合性が弱い)
+- Related bugs: `F-20260422-01` (いずれも状態整合性のテーマ)
