@@ -1,0 +1,19 @@
+{
+  "name": "qa-explorer",
+  "version": "1.0.0",
+  "description": "VS Code + GitHub Copilot で動く「ルンバ型」QA探索エージェントです。 対象URLとざっくりしたテスト意図を渡すと、23観点リストに沿って自律的にテストを 生成・実行・記録します。",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}
