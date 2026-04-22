@@ -1,10 +1,11 @@
 # Bug Report
 
 - Date: `2026-04-22`
-- Viewpoint: `02 表示(UI) - エラー表示(正常系)`
+- Viewpoint: `02 表示(UI) - エラー表示(正常系)` (関連派生観点: `DV-20260422-02`)
 - Severity: `Medium`
 - Page: `https://hotel-example-site.takeyaqa.dev/ja/reserve.html?plan-id=0`
 - Title: `必須項目未入力で送信しても先頭の不正フィールドへフォーカスが移動しない`
+- Finding ID: `F-20260422-01`
 
 ## Summary
 
@@ -32,3 +33,8 @@
 
 - Playwright failure context:
   `test-results/tests-generated-viewpoint--8b26f-常系-必須項目未入力時にフィールド別エラーが表示される/error-context.md`
+
+## Related
+
+- Hypothesis: `H-20260422-01` (ユーザー操作後の状態整合性が弱い)
+- Related bugs: `F-20260422-02` (いずれも状態整合性のテーマ)

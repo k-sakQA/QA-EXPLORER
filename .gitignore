@@ -2,3 +2,7 @@ node_modules/
 test-results/
 playwright-report/
 .DS_Store
+
+# Migration bundle (remove after applying)
+files/
+apply-knowledge-loop.sh
