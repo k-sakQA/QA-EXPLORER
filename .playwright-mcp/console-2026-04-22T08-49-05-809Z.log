@@ -1,0 +1,2 @@
+[     366ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://hotel-example-site.takeyaqa.dev/favicon.ico:0
+[   39484ms] [WARNING] Scripts may close only the windows that were opened by them. @ https://hotel-example-site.takeyaqa.dev/dist/confirm.bundle.js:0

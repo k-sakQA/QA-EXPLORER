@@ -1,0 +1,85 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Hotel Planisphere" [ref=e3] [cursor=pointer]:
+      - /url: "#"
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - heading "宿泊予約" [level=2] [ref=e7]
+      - heading "お得な特典付きプラン" [level=4] [ref=e8]
+      - paragraph [ref=e9]: お一人様1泊7,000円〜、土日は25%アップ。1名様〜9名様、最長9泊
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e14]:
+            - text: 宿泊日
+            - generic [ref=e15]: 必須
+          - textbox "宿泊日 必須" [ref=e16]: 2026/04/23
+          - generic [ref=e17]: ご予約は3ヶ月以内の日付のみ可能です。
+        - generic [ref=e18]:
+          - generic [ref=e19]:
+            - text: 宿泊数
+            - generic [ref=e20]: 必須
+          - generic [ref=e21]:
+            - spinbutton "宿泊数 必須" [ref=e22]: "1"
+            - generic [ref=e24]: 泊
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - text: 人数
+            - generic [ref=e27]: 必須
+          - generic [ref=e28]:
+            - spinbutton "人数 必須" [ref=e29]: "1"
+            - generic [ref=e31]: 人
+        - generic [ref=e32]: 追加プラン お一人様各1,000円
+        - generic [ref=e34]:
+          - checkbox "朝食バイキング" [checked] [ref=e35]
+          - generic [ref=e36]: 朝食バイキング
+        - generic [ref=e38]:
+          - checkbox "昼からチェックインプラン" [ref=e39]
+          - generic [ref=e40]: 昼からチェックインプラン
+        - generic [ref=e42]:
+          - checkbox "お得な観光プラン" [ref=e43]
+          - generic [ref=e44]: お得な観光プラン
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - text: 氏名
+            - generic [ref=e47]: 必須
+          - textbox "氏名 必須" [ref=e48]: テスト太郎
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - text: 確認のご連絡
+            - generic [ref=e51]: 必須
+          - combobox "確認のご連絡 必須" [ref=e52]:
+            - option "選択してください"
+            - option "希望しない" [selected]
+            - option "メールでのご連絡"
+            - option "電話でのご連絡"
+        - generic [ref=e53]:
+          - generic [ref=e54]: ご要望・ご連絡事項等ありましたらご記入ください
+          - textbox "ご要望・ご連絡事項等ありましたらご記入ください" [ref=e55]
+      - generic [ref=e56]:
+        - heading "合計" [level=3] [ref=e57]
+        - status [ref=e58]: 7,000円
+        - button "予約内容を確認する" [ref=e59] [cursor=pointer]
+        - generic [ref=e60]:
+          - paragraph [ref=e61]: 部屋指定なし
+          - iframe [ref=e62]:
+            - generic [ref=f6e2]:
+              - heading "スタンダードツイン" [level=5] [ref=f6e5]
+              - generic [ref=f6e7]:
+                - heading "部屋タイプ" [level=6] [ref=f6e8]
+                - paragraph [ref=f6e9]: ツイン
+                - heading "定員" [level=6] [ref=f6e10]
+                - paragraph [ref=f6e11]: 1〜2名
+                - heading "広さ" [level=6] [ref=f6e12]
+                - paragraph [ref=f6e13]: 18㎡
+                - heading "設備" [level=6] [ref=f6e14]
+                - list [ref=f6e15]:
+                  - listitem [ref=f6e16]: ユニット式バス・トイレ
+                  - listitem [ref=f6e17]: 独立洗面台
+  - contentinfo [ref=e63]:
+    - generic [ref=e64]:
+      - list [ref=e65]:
+        - listitem [ref=e66]:
+          - link "GitHub" [ref=e67] [cursor=pointer]:
+            - /url: https://github.com/takeyaqa/hotel-example-site
+      - paragraph [ref=e68]: © 2020-2026 Takeshi Kishi

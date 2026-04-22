@@ -1,0 +1,37 @@
+- generic [active] [ref=e1]:
+  - heading "Hotel Planisphere" [level=1] [ref=e2]
+  - navigation [ref=e3]:
+    - list [ref=e5]:
+      - listitem [ref=e6]:
+        - link "ホーム" [ref=e7] [cursor=pointer]:
+          - /url: ./index.html
+      - listitem [ref=e8]:
+        - link "宿泊予約" [ref=e9] [cursor=pointer]:
+          - /url: ./plans.html
+      - listitem [ref=e10]:
+        - link "会員登録" [ref=e11] [cursor=pointer]:
+          - /url: ./signup.html
+      - listitem [ref=e12]:
+        - button "ログイン" [ref=e13] [cursor=pointer]
+  - generic [ref=e14]:
+    - heading "宿泊プラン一覧" [level=2] [ref=e17]
+    - generic [ref=e20]:
+      - generic [ref=e21]: ⭐おすすめプラン⭐
+      - generic [ref=e22]:
+        - heading "お得な特典付きプラン" [level=5] [ref=e23]
+        - list [ref=e24]:
+          - listitem [ref=e25]: 大人1名7,000円
+          - listitem [ref=e26]: 1名様から
+          - listitem [ref=e27]: スタンダードツイン
+        - link "このプランで予約" [ref=e28] [cursor=pointer]:
+          - /url: ./reserve.html?plan-id=0
+      - generic [ref=e29]: 本日限り
+    - status [ref=e31]:
+      - generic [ref=e32]: Loading...
+  - contentinfo [ref=e33]:
+    - generic [ref=e34]:
+      - list [ref=e35]:
+        - listitem [ref=e36]:
+          - link "GitHub" [ref=e37] [cursor=pointer]:
+            - /url: https://github.com/takeyaqa/hotel-example-site
+      - paragraph [ref=e38]: © 2020-2026 Takeshi Kishi
