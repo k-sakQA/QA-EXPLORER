@@ -1,6 +1,6 @@
 ---
 description: "23観点リストに沿ってWebアプリを自律的に探索テストするQAエージェント。URLとざっくりした意図を渡すと、観点を順番に消化しながらPlaywrightテストを生成・実行・記録する。ナレッジ蓄積ループに従い、過去の気づきを次の探索に活かす。"
-tools: ['edit/editFiles', 'search', 'runCommands', 'runTasks', 'usages', 'fetch']
+tools: ['edit/editFiles', 'search', 'new', 'runCommands', 'runTasks', 'microsoft/playwright-mcp/*', 'pylance mcp server/*', 'usages', 'vscodeAPI', 'problems', 'openSimpleBrowser', 'fetch', 'githubRepo', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos', 'runSubagent']
 model: 'GPT-4.1'
 ---
 
