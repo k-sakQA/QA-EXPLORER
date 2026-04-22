@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Explorer Report — 2026-04-23</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f6fa;
+      color: #2d3748;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ===== HEADER ===== */
+    .report-header {
+      background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+      color: #fff;
+      padding: 28px 32px 24px;
+    }
+    .report-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .report-header .meta { font-size: 12px; color: #a0aec0; }
+    .report-header .target-url { color: #63b3ed; font-size: 13px; margin-top: 2px; }
+
+    /* ===== SUMMARY CARDS ===== */
+    .summary-section {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 24px 32px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .summary-card {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .summary-card .num { font-size: 36px; font-weight: 800; line-height: 1; }
+    .summary-card .label { font-size: 12px; color: #718096; margin-top: 6px; }
+    .summary-card.bugs .num  { color: #e53e3e; }
+    .summary-card.cov  .num  { color: #38a169; }
+    .summary-card.sess .num  { color: #3182ce; }
+    .summary-card.tgts .num  { color: #805ad5; }
+
+    /* ===== MAIN CONTENT ===== */
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a202c;
+      border-left: 4px solid #3182ce;
+      padding-left: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== BUG TABLE ===== */
+    .bug-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+    .bug-table th {
+      background: #edf2f7;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid #cbd5e0;
+      color: #4a5568;
+    }
+    .bug-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .bug-table tr:hover td { background: #f7fafc; }
+    .bug-table .finding-id { font-family: monospace; font-size: 12px; color: #718096; white-space: nowrap; }
+    .bug-table .bug-title { font-weight: 600; }
+    .bug-table .viewpoint-tag {
+      display: inline-block;
+      background: #ebf8ff;
+      color: #2b6cb0;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    .bug-table .summary { font-size: 13px; color: #4a5568; margin-top: 4px; }
+
+    /* severity badges */
+    .badge {
+      display: inline-block;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      white-space: nowrap;
+    }
+    .badge.critical { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .badge.high     { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+    .badge.medium   { background: #fffff0; color: #975a16; border: 1px solid #f6e05e; }
+    .badge.low      { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+
+    /* priority badges */
+    .pri.high   { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .pri.medium { background: #fffff0; color: #975a16; border: 1px solid #f6e05e; }
+    .pri.low    { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+
+    /* ===== COVERAGE TABLE ===== */
+    .cov-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    .cov-table th {
+      background: #edf2f7;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #cbd5e0;
+      color: #4a5568;
+    }
+    .cov-table th:first-child { width: 40px; text-align: right; }
+    .cov-table th:nth-child(4) { width: 110px; }
+    .cov-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+    .cov-table td:first-child { text-align: right; color: #a0aec0; font-size: 12px; }
+    .cov-table tr:hover td { background: #f7fafc; }
+
+    .status-badge {
+      display: inline-block;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+    }
+    .status-badge.done    { background: #c6f6d5; color: #22543d; }
+    .status-badge.recheck { background: #feebc8; color: #7b341e; }
+    .status-badge.todo    { background: #e9d8fd; color: #44337a; }
+    .status-badge.na      { background: #e2e8f0; color: #718096; }
+
+    /* ===== TEST CARDS ===== */
+    .test-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    details.test-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    details.test-card summary {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f7fafc;
+      border-bottom: 1px solid transparent;
+      list-style: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    details.test-card[open] summary { border-bottom-color: #e2e8f0; }
+    details.test-card summary::-webkit-details-marker { display: none; }
+    details.test-card summary::before {
+      content: "▶";
+      font-size: 10px;
+      color: #a0aec0;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+    details.test-card[open] summary::before { transform: rotate(90deg); }
+    .test-card .iter-num {
+      background: #ebf8ff;
+      color: #2b6cb0;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+    }
+    .test-card .result-tag {
+      margin-left: auto;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+    }
+    .result-tag.fail     { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .result-tag.pass     { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+    .result-tag.rejected { background: #e2e8f0; color: #718096; border: 1px solid #cbd5e0; }
+    .result-tag.mixed    { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+
+    .test-card .card-body {
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .test-card .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #a0aec0;
+      margin-bottom: 4px;
+    }
+    .test-card .field-value { font-size: 13px; color: #2d3748; }
+    .test-card .field-value ul { padding-left: 18px; }
+    .test-card .field-value li { margin-bottom: 2px; }
+    .full-width { grid-column: 1 / -1; }
+
+    /* ===== CARD WRAPPER ===== */
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #1a202c;
+    }
+    .card .target-sub {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 24px;
+    }
+    .empty-note {
+      color: #a0aec0;
+      font-style: italic;
+      font-size: 13px;
+      padding: 12px 0;
+    }
+
+    /* ===== FOOTER ===== */
+    .report-footer {
+      background: #1a202c;
+      color: #718096;
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      margin-top: 48px;
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: #fff; font-size: 12px; }
+      .summary-section { page-break-after: avoid; }
+      .card { page-break-inside: avoid; border: 1px solid #ccc; }
+      details.test-card { open: true; }
+      details.test-card summary::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="report-header">
+  <h1>QA Explorer Report</h1>
+  <div class="meta">Generated: 2026-04-23 &nbsp;|&nbsp; by QA Explorer Report Skill (Kaz Sakata)</div>
+  <div class="target-url">Target: https://hotel-example-site.takeyaqa.dev/ja/plans.html</div>
+</div>
+
+<!-- ===== OVERALL SUMMARY ===== -->
+<div class="summary-section">
+  <div class="summary-card tgts">
+    <div class="num">1</div>
+    <div class="label">テスト対象数</div>
+  </div>
+  <div class="summary-card bugs">
+    <div class="num">7</div>
+    <div class="label">検出バグ総数</div>
+  </div>
+  <div class="summary-card">
+    <div class="num" style="color:#d69e2e;">0</div>
+    <div class="label">手動テスト候補</div>
+  </div>
+  <div class="summary-card cov">
+    <div class="num">100%</div>
+    <div class="label">観点カバレッジ</div>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="container">
+
+  <div class="card">
+    <h2>hotel-example-site-takeyaqa-dev</h2>
+    <div class="target-sub">
+      URL: https://hotel-example-site.takeyaqa.dev/ja/plans.html &nbsp;|&nbsp;
+      Focus: 予約フォームを重点的に &nbsp;|&nbsp;
+      テスト日: 2026-04-22 &nbsp;|&nbsp;
+      セッション数: 2 &nbsp;|&nbsp;
+      消化観点: 20/20（N/A 3観点除く）
+    </div>
+
+    <!-- ===== BUGS ===== -->
+    <div class="section-title">検出バグ一覧（7件）</div>
+    <table class="bug-table">
+      <thead>
+        <tr>
+          <th>Finding ID</th>
+          <th>タイトル / 観点</th>
+          <th>Severity</th>
+          <th>概要</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="finding-id">F-20260422-20</td>
+          <td>
+            <div class="bug-title">予約完了後に二重予約が可能</div>
+            <span class="viewpoint-tag">観点19 登録と参照</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">予約完了ダイアログを閉じた後も「この内容で予約する」ボタンがクリック可能。再クリックで予約完了処理が再実行され、二重予約が発生する。実運用環境では二重課金や業務混乱のリスクあり。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260422-07</td>
+          <td>
+            <div class="bug-title">ブラウザバックで宿泊日・宿泊数・人数が初期値に戻る</div>
+            <span class="viewpoint-tag">観点13 切替えとデータ保持</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">確認画面からブラウザの戻るボタンで予約フォームに戻ると、宿泊日・宿泊数・人数がすべて初期値にリセットされる。氏名・追加プランのチェックボックスは保持される。H-20260422-01（状態復元実装不備）Confirmed。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260422-04</td>
+          <td>
+            <div class="bug-title">宿泊数に0を指定して予約確認画面に進めてしまう</div>
+            <span class="viewpoint-tag">観点23 禁則</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">宿泊数(term)の input[type=number] に min 属性が未設定で、0泊の予約が通過してしまう。業務ルール違反。H-20260422-02（numberフィールドのmin属性未設定）Confirmed。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260422-05</td>
+          <td>
+            <div class="bug-title">人数に0を指定して予約確認画面に進めてしまう</div>
+            <span class="viewpoint-tag">観点23 禁則</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">人数(head-count)の input[type=number] に min 属性が未設定で、0人の予約が通過してしまう。F-20260422-04と同根の問題。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260422-13</td>
+          <td>
+            <div class="bug-title">氏名欄に長大な文字列を入力するとURL長超過エラーが発生する</div>
+            <span class="viewpoint-tag">観点06 文字数（異常値）</span>
+          </td>
+          <td><span class="badge medium">Medium</span></td>
+          <td class="summary">氏名欄に maxlength 属性がなく、1000文字入力後に確認画面へ遷移するとサーバーが 414 URI Too Long を返す。フォームが GET 送信のためURLに入力値が含まれる設計が原因。エラーページも未整備。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260422-01</td>
+          <td>
+            <div class="bug-title">ブラウザの戻るボタンでメールアドレスが消失する</div>
+            <span class="viewpoint-tag">観点10 単機能</span>
+          </td>
+          <td><span class="badge medium">Medium</span></td>
+          <td class="summary">確認画面からブラウザバックで戻ると、メールアドレス欄の入力値が消失する。氏名・コメントは保持されており、フィールドタイプによる差異あり。F-20260422-07の先行発見。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260422-09</td>
+          <td>
+            <div class="bug-title">全角スペースのみの氏名で予約確認画面に進めてしまう</div>
+            <span class="viewpoint-tag">観点09 未入力</span>
+          </td>
+          <td><span class="badge medium">Medium</span></td>
+          <td class="summary">氏名欄に全角スペースのみ入力しても required チェックが通過し、確認画面に遷移できる。trim 処理なしで HTML5 バリデーションが行われているため。業務上無意味なデータが登録される可能性あり。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== MANUAL TESTS ===== -->
+    <div class="section-title">手動テスト候補</div>
+    <p class="empty-note">起票なし（manual-tests.md が存在しない）</p>
+
+    <!-- ===== COVERAGE ===== -->
+    <div class="section-title" style="margin-top:32px;">観点カバレッジ（消化済み・N/A のみ表示）</div>
+    <table class="cov-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>観点</th>
+          <th style="width:50px;text-align:center;">優先度</th>
+          <th>状態</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td><td>レイアウト/文言</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>レスポンシブOK (375/768/1920px) F-20260422-19</td>
+        </tr>
+        <tr>
+          <td>2</td><td>エラー表示（正常系）</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge done">再消化済み</span></td>
+          <td>H-20260422-01 Confirmed via P-20260422-01</td>
+        </tr>
+        <tr>
+          <td>3</td><td>文字種</td><td style="text-align:center;">P1</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>XSS対策OK、F-20260422-10</td>
+        </tr>
+        <tr>
+          <td>4</td><td>文字数（正常値）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>maxlength未設定多い F-20260422-15</td>
+        </tr>
+        <tr>
+          <td>5</td><td>文字数（正常限界）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>電話番号11桁固定（10桁弾く）F-20260422-16</td>
+        </tr>
+        <tr>
+          <td>6</td><td>文字数（異常値）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>バグ: F-20260422-13（氏名1000字でURL超過）/ H-20260422-04 Confirmed</td>
+        </tr>
+        <tr>
+          <td>7</td><td>数値（正常値）</td><td style="text-align:center;">P1</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>9泊弾かれる（上限あり）</td>
+        </tr>
+        <tr>
+          <td>8</td><td>数値（異常値）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>小数・上限超過は弾かれる。NaN入力は軽微（F-20260422-12）</td>
+        </tr>
+        <tr>
+          <td>9</td><td>未入力</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>バグ: F-20260422-09（全角スペースのみ）</td>
+        </tr>
+        <tr>
+          <td>10</td><td>単機能</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>バグ: F-20260422-01</td>
+        </tr>
+        <tr>
+          <td>11</td><td>イベントによる状態変化</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>正常動作確認</td>
+        </tr>
+        <tr>
+          <td>12</td><td>経時変化</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>送信中ボタン無効化なし（軽微）</td>
+        </tr>
+        <tr>
+          <td>13</td><td>切替えとデータ保持</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>バグ: F-20260422-07 / H-20260422-01 Confirmed</td>
+        </tr>
+        <tr>
+          <td>14</td><td>初期値</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>初期値正常</td>
+        </tr>
+        <tr>
+          <td>15</td><td>変更・反映</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>H-20260422-03 Rejected、料金計算正常</td>
+        </tr>
+        <tr>
+          <td>16</td><td>設定保持</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge na">N/A</span></td>
+          <td>Webフォームのため対象外</td>
+        </tr>
+        <tr>
+          <td>17</td><td>キャンセル</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>キャンセルボタンなし F-20260422-17、ブラウザバック問題はH-20260422-01で既報</td>
+        </tr>
+        <tr>
+          <td>18</td><td>複数因子の組合せ</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>9名×9泊×全オプションON正常 F-20260422-18</td>
+        </tr>
+        <tr>
+          <td>19</td><td>登録と参照</td><td style="text-align:center;">P3</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>バグ: F-20260422-20（二重予約可能）/ 予約番号なし（F-20260422-21）</td>
+        </tr>
+        <tr>
+          <td>20</td><td>複数アカウント</td><td style="text-align:center;">P3</td>
+          <td><span class="status-badge na">N/A</span></td>
+          <td>会員機能なしのため対象外</td>
+        </tr>
+        <tr>
+          <td>21</td><td>別デバイス</td><td style="text-align:center;">P3</td>
+          <td><span class="status-badge na">N/A</span></td>
+          <td>状態保持機能なしのため対象外</td>
+        </tr>
+        <tr>
+          <td>22</td><td>登録と参照（参照側）</td><td style="text-align:center;">P3</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>19と同時に消化。予約完了フロー確認済み</td>
+        </tr>
+        <tr>
+          <td>23</td><td>禁則</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>バグ: F-20260422-04, 05 / H-20260422-02 Confirmed</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#718096;margin-bottom:32px;">
+      消化済み/再消化済み: 20観点 &nbsp;|&nbsp; N/A: 3観点（16, 20, 21） &nbsp;|&nbsp; 未着手: 0観点 &nbsp;|&nbsp; カバレッジ: <strong>100%</strong>
+    </p>
+
+    <!-- ===== TEST ITERATIONS ===== -->
+    <div class="section-title">実行したテストの内容</div>
+    <div class="test-cards">
+
+      <!-- Session 1, Iteration 1-2 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 1-2</span>
+          Session #1 &nbsp;—&nbsp; 観点10 単機能 + 観点02 エラー表示
+          <span class="result-tag mixed">バグ1件 / Finding3件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">予約フォームの基本フローとブラウザバック時のデータ保持動作を確認。エラーメッセージ表示の品質（ローカライズ、フォーカス制御）も検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag fail" style="font-size:12px;">FAIL</span> &nbsp;F-20260422-01: ブラウザバックでメールアドレス消失を検出。H-20260422-01（状態復元実装不備）を新規起票。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>必須項目（氏名・連絡方法・メールアドレス）を入力して確認画面へ遷移</li>
+              <li>ブラウザの戻るボタンで予約フォームに戻り、各フィールドの値を確認</li>
+              <li>必須項目未入力でのバリデーションメッセージの内容・言語・フォーカス動作を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 1, Iteration 3 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 3</span>
+          Session #1 &nbsp;—&nbsp; 観点23 禁則
+          <span class="result-tag fail">バグ2件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">宿泊数・人数フィールドで業務上許可されない値（0、負数）が入力できないことを確認。input[type=number] の min 属性設定を検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag fail" style="font-size:12px;">FAIL</span> &nbsp;F-20260422-04（宿泊数0）/ F-20260422-05（人数0）検出。H-20260422-02（min属性未設定）Confirmed。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>宿泊数フィールドに「0」を入力し、確認画面への遷移可否を確認</li>
+              <li>人数フィールドに「0」を入力し、同様に遷移可否を確認</li>
+              <li>DevTools で min 属性の有無を確認（null であることを確認）</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 1, Iteration 4 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 4</span>
+          Session #1 &nbsp;—&nbsp; Probe P-20260422-01（H-20260422-01 検証）
+          <span class="result-tag fail">Confirmed / バグ1件追加</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">H-20260422-01（状態復元実装不備）を検証。メールアドレス以外のフィールドでもブラウザバックで値が失われるかを調査。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag fail" style="font-size:12px;">FAIL</span> &nbsp;宿泊日・宿泊数・人数もリセットされることを確認。F-20260422-07 として起票。H-20260422-01 Confirmed。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>宿泊日・宿泊数・人数を初期値から変更（例: 2026/05/15、5泊、3名）</li>
+              <li>氏名入力後、確認画面へ遷移</li>
+              <li>ブラウザバックで戻り、各フィールドの値を記録・比較</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 1, Iteration 5 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 5</span>
+          Session #1 &nbsp;—&nbsp; 観点03 文字種 + 観点09 未入力
+          <span class="result-tag mixed">バグ1件 / XSS OK</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">XSS・SQLインジェクション・特殊文字の処理を確認。また、未入力バリデーションの実装品質（全角スペース・半角スペースの扱い）を検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag mixed" style="font-size:12px;">MIXED</span> &nbsp;XSS対策OK（PASS）。全角スペースのみで確認画面通過 F-20260422-09（FAIL）。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>氏名欄に &lt;script&gt;alert(1)&lt;/script&gt; などを入力し、確認画面での表示を確認</li>
+              <li>サロゲートペア（絵文字）・制御文字・SQL特殊文字も入力して問題がないか確認</li>
+              <li>氏名欄に全角スペースのみ「　　　」を入力して確認画面への遷移可否を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 1, Iteration 6-7 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 6-7</span>
+          Session #1 &nbsp;—&nbsp; 観点07 数値正常値 + 観点15 変更・反映
+          <span class="result-tag rejected">H-20260422-03 Rejected</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">宿泊数・人数の正常範囲確認と、追加プラン選択時の料金計算が仕様通りであるかを検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag rejected" style="font-size:12px;">REJECTED</span> &nbsp;料金計算バグ疑惑（H-20260422-03）はテスト側の待機不足が原因と判明。料金計算は仕様通り正常。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>宿泊数を1〜9の範囲で変更し、上限（9泊まで受付）を確認</li>
+              <li>朝食付きプランを選択し、人数変更時の料金更新を確認（更新を待機してから取得）</li>
+              <li>「お一人様1泊7,000円」の計算ロジック（人数×7,000円）を検証</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 1, Iteration 8 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 8</span>
+          Session #1 &nbsp;—&nbsp; 観点08 数値異常値
+          <span class="result-tag pass">軽微な観察1件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">宿泊数・人数フィールドへの異常値（小数・上限超過・NaN）入力時の動作を確認。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag pass" style="font-size:12px;">PASS（概ね）</span> &nbsp;小数・上限超過は適切に弾かれる。JSでNaN注入時は1泊として扱われる（軽微: F-20260422-12）。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>宿泊数に小数（1.5）・上限超過値（999）を入力し、バリデーション動作を確認</li>
+              <li>DevTools で value を NaN に書き換えてフォーム送信し、確認画面の表示を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 1, Iteration 9 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 9</span>
+          Session #1 &nbsp;—&nbsp; 観点14 初期値 + 観点12 経時変化
+          <span class="result-tag pass">軽微な観察1件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">ページ読み込み直後の初期値の正確性と、フォーム送信中のボタン状態制御（二重送信防止）を確認。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag pass" style="font-size:12px;">PASS（概ね）</span> &nbsp;初期値正常。送信ボタンの無効化なしは軽微な観察として記録。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>予約ページ読み込み直後の宿泊日・宿泊数・人数・プランの初期値を確認</li>
+              <li>「予約内容を確認する」ボタンクリック直後の送信中にボタンの disabled 状態を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 2, Iteration 1 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 1</span>
+          Session #2 &nbsp;—&nbsp; 観点04/05/06 文字数系
+          <span class="result-tag fail">バグ1件 / Finding4件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">氏名・コメント・電話番号の文字数制限（正常値/正常限界/異常値）を網羅的に確認。maxlength設定とサーバー側バリデーションの有無を検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag fail" style="font-size:12px;">FAIL</span> &nbsp;氏名1000文字でURI Too Long（F-20260422-13）。コメント欄のmaxlength=140はフロントエンドのみ（F-20260422-14）。H-20260422-04 Confirmed。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>氏名欄に「あ」×1000文字を入力して確認画面への遷移を試みる</li>
+              <li>氏名欄に500文字を入力して正常処理されるか確認</li>
+              <li>DevToolsでコメント欄のmaxlength属性を削除し、200文字超を入力して遷移可否を確認</li>
+              <li>電話番号に10桁（03-xxxx-xxxx形式）を入力してバリデーション動作を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 2, Iteration 2 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 2</span>
+          Session #2 &nbsp;—&nbsp; 観点17 キャンセル
+          <span class="result-tag pass">Finding2件（既存仮説の追加エビデンス）</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">予約フォームにキャンセル手段があるかを確認。キャンセル後のデータ状態も検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag pass" style="font-size:12px;">観察</span> &nbsp;キャンセルボタンなし（F-20260422-17）。ロゴリンクが同一ページ内遷移のみ。plans.htmlへ移動後バックで戻るとH-20260422-01が再現。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>予約フォームのキャンセルボタン・戻るリンクの有無を確認</li>
+              <li>ロゴリンクのhref属性を確認</li>
+              <li>plans.htmlに遷移後ブラウザバックで予約フォームに戻り、宿泊数・人数の値を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 2, Iteration 3 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 3</span>
+          Session #2 &nbsp;—&nbsp; 観点18 複数因子の組合せ
+          <span class="result-tag pass">PASS</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">最大値の組み合わせ（9名×9泊×全追加プランON）でシステムが正常動作するかを確認。料金計算の一貫性も検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag pass" style="font-size:12px;">PASS</span> &nbsp;9名×9泊×全オプションONで確認画面遷移OK。料金697,500円で計算一貫。極端な組み合わせでもエラーなし（F-20260422-18）。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>宿泊数を9に、人数を9に設定</li>
+              <li>全追加プランのチェックボックスをONにする</li>
+              <li>確認画面への遷移と料金表示（697,500円）を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 2, Iteration 4 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 4</span>
+          Session #2 &nbsp;—&nbsp; 観点01 レイアウト/文言
+          <span class="result-tag pass">PASS</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">モバイル・タブレット・デスクトップの3ブレークポイントでレイアウト崩れがないことを確認。フォーム要素の文言の一貫性も検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag pass" style="font-size:12px;">PASS</span> &nbsp;375px/768px/1920pxいずれもレイアウト崩れなし。文言一貫。スクリーンショット取得済み（F-20260422-19）。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>ビューポートを375px（モバイル）に設定してフォームの表示を確認・スクリーンショット取得</li>
+              <li>ビューポートを768px（タブレット）、1920px（デスクトップ）でも同様に確認</li>
+              <li>ラベル・エラーメッセージ・ボタン文言の日本語表記を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 2, Iteration 5 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">Iter 5</span>
+          Session #2 &nbsp;—&nbsp; 観点19/22 登録と参照
+          <span class="result-tag fail">バグ1件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">予約完了フロー（入力→確認→完了）の動作確認と、完了後の二重送信防止・画面遷移を検証。予約番号の発行有無も確認。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value"><span class="result-tag fail" style="font-size:12px;">FAIL</span> &nbsp;予約完了後もボタンが有効のまま。再クリックで二重予約が可能（F-20260422-20）。予約番号は発行されない（F-20260422-21: 観察）。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>必須項目を入力し確認画面へ遷移</li>
+              <li>「この内容で予約する」をクリックし、完了ダイアログを確認</li>
+              <li>「閉じる」ボタンクリック後に「この内容で予約する」ボタンの disabled 状態を確認</li>
+              <li>再度「この内容で予約する」をクリックし、二重予約の発生可否を確認</li>
+              <li>完了ダイアログに予約番号・確認コードが表示されるか確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+    </div><!-- /.test-cards -->
+  </div><!-- /.card -->
+
+</div><!-- /.container -->
+
+<!-- ===== FOOTER ===== -->
+<div class="report-footer">
+  Generated by QA Explorer Report Skill (Kaz Sakata) &nbsp;|&nbsp; 2026-04-23
+</div>
+
+</body>
+</html>
