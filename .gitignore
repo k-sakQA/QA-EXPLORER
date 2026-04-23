@@ -3,6 +3,9 @@ test-results/
 playwright-report/
 .DS_Store
 
+# 認証情報 (手動ログインで生成)
+storage/
+
 # Migration bundle (remove after applying)
 files/
 apply-knowledge-loop.sh
