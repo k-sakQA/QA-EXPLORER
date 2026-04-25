@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Explorer Report — hotel-example-site — 2026-04-24</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f6fa;
+      color: #2d3748;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ===== HEADER ===== */
+    .report-header {
+      background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+      color: #fff;
+      padding: 28px 32px 24px;
+    }
+    .report-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .report-header .meta { font-size: 12px; color: #a0aec0; }
+    .report-header .target-url { color: #63b3ed; font-size: 13px; margin-top: 2px; }
+
+    /* ===== SUMMARY CARDS ===== */
+    .summary-section {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      padding: 24px 32px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .summary-card {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .summary-card .num { font-size: 36px; font-weight: 800; line-height: 1; }
+    .summary-card .label { font-size: 12px; color: #718096; margin-top: 6px; }
+    .summary-card.bugs .num  { color: #e53e3e; }
+    .summary-card.cov  .num  { color: #38a169; }
+    .summary-card.sess .num  { color: #3182ce; }
+    .summary-card.tgts .num  { color: #805ad5; }
+    .summary-card.tests .num { color: #d69e2e; }
+
+    /* ===== MAIN CONTENT ===== */
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px; }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a202c;
+      border-left: 4px solid #3182ce;
+      padding-left: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== BUG TABLE ===== */
+    .bug-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+    .bug-table th {
+      background: #edf2f7;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid #cbd5e0;
+      color: #4a5568;
+    }
+    .bug-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .bug-table tr:hover td { background: #f7fafc; }
+    .bug-table .finding-id { font-family: monospace; font-size: 12px; color: #718096; white-space: nowrap; }
+    .bug-table .bug-title { font-weight: 600; }
+    .bug-table .viewpoint-tag {
+      display: inline-block;
+      background: #ebf8ff;
+      color: #2b6cb0;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    .bug-table .session-tag {
+      display: inline-block;
+      background: #faf5ff;
+      color: #6b46c1;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 11px;
+      margin-top: 4px;
+      margin-left: 4px;
+    }
+    .bug-table .summary { font-size: 13px; color: #4a5568; margin-top: 4px; }
+
+    /* severity badges */
+    .badge {
+      display: inline-block;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      white-space: nowrap;
+    }
+    .badge.critical { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .badge.high     { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+    .badge.medium   { background: #fffff0; color: #975a16; border: 1px solid #f6e05e; }
+    .badge.low      { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+
+    /* ===== COVERAGE TABLE ===== */
+    .cov-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    .cov-table th {
+      background: #edf2f7;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #cbd5e0;
+      color: #4a5568;
+    }
+    .cov-table th:first-child { width: 40px; text-align: right; }
+    .cov-table th:nth-child(4) { width: 110px; }
+    .cov-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+    .cov-table td:first-child { text-align: right; color: #a0aec0; font-size: 12px; }
+    .cov-table tr:hover td { background: #f7fafc; }
+
+    .status-badge {
+      display: inline-block;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+    }
+    .status-badge.done    { background: #c6f6d5; color: #22543d; }
+    .status-badge.redone  { background: #b2f5ea; color: #234e52; }
+    .status-badge.recheck { background: #feebc8; color: #7b341e; }
+    .status-badge.todo    { background: #e9d8fd; color: #44337a; }
+    .status-badge.na      { background: #e2e8f0; color: #718096; }
+
+    /* ===== HYPOTHESIS TABLE ===== */
+    .hyp-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; font-size: 13px; }
+    .hyp-table th {
+      background: #edf2f7;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 2px solid #cbd5e0;
+      color: #4a5568;
+    }
+    .hyp-table td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .hyp-table tr:hover td { background: #f7fafc; }
+    .hyp-id { font-family: monospace; font-size: 12px; color: #718096; white-space: nowrap; }
+    .hyp-status {
+      display: inline-block;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+    }
+    .hyp-status.confirmed { background: #fed7d7; color: #9b2c2c; }
+    .hyp-status.open      { background: #fefcbf; color: #744210; }
+    .hyp-status.rejected  { background: #e2e8f0; color: #718096; }
+
+    /* ===== LATERAL TABLE ===== */
+    .lateral-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; font-size: 13px; }
+    .lateral-table th {
+      background: #edf2f7;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      padding: 8px 10px;
+      border-bottom: 2px solid #cbd5e0;
+      color: #4a5568;
+    }
+    .lateral-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: center;
+    }
+    .lateral-table td:nth-child(2) { text-align: left; }
+    .lateral-table tr:hover td { background: #f7fafc; }
+    .vuln { color: #c53030; font-weight: 700; }
+    .safe { color: #38a169; }
+    .unknown { color: #a0aec0; }
+
+    /* ===== TEST CARDS ===== */
+    .test-cards { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
+    details.test-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    details.test-card summary {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #f7fafc;
+      border-bottom: 1px solid transparent;
+      list-style: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    details.test-card[open] summary { border-bottom-color: #e2e8f0; }
+    details.test-card summary::-webkit-details-marker { display: none; }
+    details.test-card summary::before {
+      content: "▶";
+      font-size: 10px;
+      color: #a0aec0;
+      transition: transform 0.15s;
+      flex-shrink: 0;
+    }
+    details.test-card[open] summary::before { transform: rotate(90deg); }
+    .test-card .iter-num {
+      background: #ebf8ff;
+      color: #2b6cb0;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+    }
+    .test-card .result-tag {
+      margin-left: auto;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+    }
+    .result-tag.fail     { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .result-tag.pass     { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+    .result-tag.mixed    { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+
+    .test-card .card-body {
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .test-card .field-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #a0aec0;
+      margin-bottom: 4px;
+    }
+    .test-card .field-value { font-size: 13px; color: #2d3748; }
+    .test-card .field-value ul { padding-left: 18px; }
+    .test-card .field-value li { margin-bottom: 2px; }
+    .full-width { grid-column: 1 / -1; }
+
+    /* ===== CARD WRAPPER ===== */
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+    .card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #1a202c;
+    }
+    .card .target-sub {
+      font-size: 12px;
+      color: #718096;
+      margin-bottom: 24px;
+    }
+
+    /* ===== KEY INSIGHT BOX ===== */
+    .insight-box {
+      background: linear-gradient(135deg, #fefcbf 0%, #fef3cd 100%);
+      border: 1px solid #f6e05e;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+    }
+    .insight-box h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #744210;
+      margin-bottom: 8px;
+    }
+    .insight-box p, .insight-box li {
+      font-size: 13px;
+      color: #744210;
+    }
+    .insight-box ul { padding-left: 18px; margin-top: 6px; }
+    .insight-box li { margin-bottom: 4px; }
+
+    /* ===== FOOTER ===== */
+    .report-footer {
+      background: #1a202c;
+      color: #718096;
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      margin-top: 48px;
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body { background: #fff; font-size: 12px; }
+      .summary-section { page-break-after: avoid; }
+      .card { page-break-inside: avoid; border: 1px solid #ccc; }
+      details.test-card { open: true; }
+      details.test-card summary::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="report-header">
+  <h1>QA Explorer Report — Session 5 &amp; 6</h1>
+  <div class="meta">Generated: 2026-04-24 &nbsp;|&nbsp; by QA Explorer (Kaz Sakata) &nbsp;|&nbsp; Session 5: ゼロベース探索 / Session 6: ナレッジ活用探索</div>
+  <div class="target-url">Target: https://hotel-example-site.takeyaqa.dev/ja/plans.html &nbsp;(HOTEL PLANISPHERE テスト自動化練習サイト)</div>
+</div>
+
+<!-- ===== OVERALL SUMMARY ===== -->
+<div class="summary-section">
+  <div class="summary-card sess">
+    <div class="num">2</div>
+    <div class="label">セッション数</div>
+  </div>
+  <div class="summary-card tests">
+    <div class="num">103</div>
+    <div class="label">テストケース実行</div>
+  </div>
+  <div class="summary-card bugs">
+    <div class="num">5</div>
+    <div class="label">新規バグ（S5+S6）</div>
+  </div>
+  <div class="summary-card">
+    <div class="num" style="color:#d69e2e;">2</div>
+    <div class="label">仮説（H-）</div>
+  </div>
+  <div class="summary-card cov">
+    <div class="num">95%</div>
+    <div class="label">観点カバレッジ</div>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="container">
+
+  <div class="card">
+    <h2>hotel-example-site-takeyaqa-dev</h2>
+    <div class="target-sub">
+      URL: https://hotel-example-site.takeyaqa.dev/ja/plans.html &nbsp;|&nbsp;
+      Focus: 予約フォームのバリデーションを重点的に &nbsp;|&nbsp;
+      テスト日: 2026-04-24 &nbsp;|&nbsp;
+      セッション: #5（ゼロベース44テスト）+ #6（ナレッジ活用59テスト）&nbsp;|&nbsp;
+      消化: 19/20（再訪推奨1、N/A 3）
+    </div>
+
+    <!-- ===== KEY INSIGHT ===== -->
+    <div class="insight-box">
+      <h3>💡 核心的発見: サーバ側バリデーション完全不在</h3>
+      <p>このサイトの全バリデーションは HTML5 属性 (required/min/max/type) とクライアントサイド JS に完全依存しており、サーバ側の検証は一切存在しない。DevTools での属性改ざんにより以下が全て通過する:</p>
+      <ul>
+        <li><strong>料金0円予約</strong> — hidden フィールド改ざんで任意の料金に変更可能（9/10プランで確認）</li>
+        <li><strong>宿泊数0/100泊/人数0</strong> — min/max 属性除去で業務上ありえない値が通過</li>
+        <li><strong>カップル限定プランで1人予約</strong> — 業務ルール制約のバイパス</li>
+        <li><strong>全角スペースのみの氏名</strong> — trim() 未実装で空白のみが通過</li>
+      </ul>
+    </div>
+
+    <!-- ===== BUGS ===== -->
+    <div class="section-title">検出バグ一覧 — Session 5 &amp; 6 新規（5件）</div>
+    <table class="bug-table">
+      <thead>
+        <tr>
+          <th>Finding ID</th>
+          <th>タイトル / 観点</th>
+          <th>Severity</th>
+          <th>概要</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="finding-id">F-20260424-01</td>
+          <td>
+            <div class="bug-title">hidden料金フィールド改ざんで0円予約が可能</div>
+            <span class="viewpoint-tag">観点08 数値（異常値）</span>
+            <span class="session-tag">Session 5</span>
+          </td>
+          <td><span class="badge critical">Critical</span></td>
+          <td class="summary">hidden フィールド <code>#room-bill-hidden</code> の value を 0 に改ざんすると、確認画面で合計0円と表示され予約が成立。plan-id=0,2,3 で再現確認（横展開済み）。plan-id=1 のみ弾かれる（H-20260424-02 で調査中）。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260424-02<br>F-20260424-03</td>
+          <td>
+            <div class="bug-title">JS改ざんで宿泊数0・人数0・宿泊数100泊が通過</div>
+            <span class="viewpoint-tag">観点08 数値（異常値）</span>
+            <span class="session-tag">Session 5</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">min/max 属性を JS で除去すると、宿泊数0泊（金額0円）、人数0人（金額0円）、宿泊数100泊（750,750円）で確認画面に到達。全10プランで横展開済み — 全プランで通過を確認。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260424-16</td>
+          <td>
+            <div class="bug-title">カップル限定プランのJS改ざんで1人予約・3泊が通過</div>
+            <span class="viewpoint-tag">観点08 / 23 禁則</span>
+            <span class="session-tag">Session 6 NEW</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">plan-id=8（カップル限定、head:2-2、term:1-2）で JS 改ざんにより 1人予約（10,000円）と 3泊（52,000円）が通過。「カップル限定」の業務ルールがサーバ側で一切検証されていない。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260424-04</td>
+          <td>
+            <div class="bug-title">全角/半角スペースのみの氏名で予約成立</div>
+            <span class="viewpoint-tag">観点09 未入力</span>
+            <span class="session-tag">Session 5</span>
+          </td>
+          <td><span class="badge medium">Medium</span></td>
+          <td class="summary">氏名欄に全角スペース「　　　」または半角スペースのみ入力しても確認画面に遷移。trim() 未実装。横展開で全プラン (plan-id=0,2,3) で同様に通過を確認。</td>
+        </tr>
+        <tr>
+          <td class="finding-id">F-20260424-05</td>
+          <td>
+            <div class="bug-title">ブラウザバックで宿泊数・人数がデフォルトにリセット</div>
+            <span class="viewpoint-tag">観点11 状態変化 / 13 データ保持</span>
+            <span class="session-tag">Session 5</span>
+          </td>
+          <td><span class="badge medium">Medium</span></td>
+          <td class="summary">確認画面からブラウザバックで戻ると、宿泊数（2→1）・人数（3→1）が初期値にリセット。コメント欄（textarea）は保持される。number 型 input のみ値が消失。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== LATERAL EXPANSION ===== -->
+    <div class="section-title">横展開: 全10プランJS改ざん耐性マトリクス</div>
+    <table class="lateral-table">
+      <thead>
+        <tr>
+          <th>plan-id</th>
+          <th>プラン名</th>
+          <th>料金</th>
+          <th>term</th>
+          <th>head</th>
+          <th>宿泊数0</th>
+          <th>スペース氏名</th>
+          <th>料金0円</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>0</td><td>お得な特典付きプラン</td><td>¥7,000</td><td>1-9</td><td>1-9</td>
+          <td class="vuln">★通過</td><td class="vuln">★通過</td><td class="vuln">★通過</td>
+        </tr>
+        <tr>
+          <td>1</td><td>プレミアムプラン</td><td>¥10,000</td><td>1-9</td><td>2-9</td>
+          <td class="vuln">★通過</td><td class="vuln">★通過</td><td class="safe">弾かれた</td>
+        </tr>
+        <tr>
+          <td>2</td><td>ディナー付きプラン</td><td>¥8,500</td><td>1-3</td><td>1-4</td>
+          <td class="vuln">★通過</td><td class="vuln">★通過</td><td class="vuln">★通過</td>
+        </tr>
+        <tr>
+          <td>3</td><td>お得なプラン</td><td>¥6,000</td><td>1-9</td><td>1-9</td>
+          <td class="vuln">★通過</td><td class="vuln">★通過</td><td class="vuln">★通過</td>
+        </tr>
+        <tr>
+          <td>4</td><td>素泊まり</td><td>¥5,500</td><td>1-9</td><td>1-2</td>
+          <td class="unknown">—</td><td class="unknown">—</td><td class="unknown">—</td>
+        </tr>
+        <tr>
+          <td>5</td><td>出張ビジネスプラン</td><td>¥7,500</td><td>1-9</td><td>1-2</td>
+          <td class="unknown">—</td><td class="unknown">—</td><td class="unknown">—</td>
+        </tr>
+        <tr>
+          <td>6</td><td>エステ・マッサージプラン</td><td>¥9,000</td><td>1-9</td><td>1-6</td>
+          <td class="unknown">—</td><td class="unknown">—</td><td class="unknown">—</td>
+        </tr>
+        <tr>
+          <td>7</td><td>貸し切り露天風呂プラン</td><td>¥9,000</td><td>1-3</td><td>1-6</td>
+          <td class="unknown">—</td><td class="unknown">—</td><td class="unknown">—</td>
+        </tr>
+        <tr>
+          <td>8</td><td>カップル限定プラン</td><td>¥8,000</td><td>1-2</td><td>2-2</td>
+          <td class="vuln">★通過</td><td class="unknown">—</td><td class="unknown">—</td>
+        </tr>
+        <tr>
+          <td>9</td><td>テーマパーク優待プラン</td><td>¥10,000</td><td>1-5</td><td>1-9</td>
+          <td class="unknown">—</td><td class="unknown">—</td><td class="unknown">—</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#718096;margin-bottom:32px;">
+      <span class="vuln">★通過</span> = JS改ざんで確認画面到達（脆弱）&nbsp;|&nbsp;
+      <span class="safe">弾かれた</span> = 改ざん検知&nbsp;|&nbsp;
+      <span class="unknown">—</span> = 未検証（次セッションで実施予定: P-20260424-02）
+    </p>
+
+    <!-- ===== HYPOTHESES ===== -->
+    <div class="section-title">仮説トラッカー</div>
+    <table class="hyp-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>仮説</th>
+          <th>Status</th>
+          <th>根拠 Finding</th>
+          <th>Probe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="hyp-id">H-20260424-01</td>
+          <td>サーバ側バリデーション不在 — 全バリデーションがクライアントサイドに依存しており、JS属性改ざんであらゆる不正値が通過する。ただし confirm.html への URL 直打ちは不可（JS状態管理）。</td>
+          <td><span class="hyp-status confirmed">Confirmed</span></td>
+          <td>F-01, F-02, F-03, F-04, F-12, F-14</td>
+          <td>P-01 Done</td>
+        </tr>
+        <tr>
+          <td class="hyp-id">H-20260424-02</td>
+          <td>プランごとに JS バリデーションロジックが異なる — plan-id=1 (プレミアムプラン) のみ hidden 料金改ざんが弾かれる。追加のクライアントサイドチェックが実装されている可能性。</td>
+          <td><span class="hyp-status open">Open</span></td>
+          <td>F-15, F-13</td>
+          <td>P-02 Planned</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== DATE BOUNDARY ===== -->
+    <div class="section-title">日付バリデーション境界値</div>
+    <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin-bottom:32px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr>
+          <td style="padding:4px 8px;color:#718096;">+1日</td>
+          <td style="padding:4px 8px;color:#38a169;font-weight:600;">✓ 予約可能</td>
+          <td style="padding:4px 8px;color:#718096;">+30日</td>
+          <td style="padding:4px 8px;color:#38a169;font-weight:600;">✓ 予約可能</td>
+          <td style="padding:4px 8px;color:#718096;">+90日</td>
+          <td style="padding:4px 8px;color:#38a169;font-weight:600;">✓ 予約可能</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 8px;color:#718096;font-weight:700;">+91日</td>
+          <td style="padding:4px 8px;color:#38a169;font-weight:700;">✓ 予約可能（境界）</td>
+          <td style="padding:4px 8px;color:#718096;font-weight:700;">+92日</td>
+          <td style="padding:4px 8px;color:#c53030;font-weight:700;">✗ 弾かれた（境界）</td>
+          <td style="padding:4px 8px;color:#718096;">+100日</td>
+          <td style="padding:4px 8px;color:#c53030;font-weight:600;">✗ 弾かれた</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 8px;color:#718096;">+180日</td>
+          <td style="padding:4px 8px;color:#c53030;font-weight:600;">✗ 弾かれた</td>
+          <td style="padding:4px 8px;color:#718096;">+365日</td>
+          <td style="padding:4px 8px;color:#c53030;font-weight:600;">✗ 弾かれた</td>
+          <td colspan="2"></td>
+        </tr>
+      </table>
+      <p style="font-size:12px;color:#718096;margin-top:8px;"><strong>結論</strong>: 予約可能期間は「今日+3カ月後」まで（2026/04/24 → 2026/07/24 = +91日がOK、+92日がNG）。F-20260424-17。</p>
+    </div>
+
+    <!-- ===== COVERAGE ===== -->
+    <div class="section-title">観点カバレッジ（Session 5 + 6 累計）</div>
+    <table class="cov-table">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>観点</th>
+          <th style="width:50px;text-align:center;">優先度</th>
+          <th>状態</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td><td>レイアウト/文言</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>レスポンシブOK (375/768/1920px)</td>
+        </tr>
+        <tr>
+          <td>2</td><td>エラー表示（正常系）</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge redone">再消化済み</span></td>
+          <td>バリデーションメッセージ英語ベース。カスタムエラー不完全。</td>
+        </tr>
+        <tr>
+          <td>3</td><td>文字種</td><td style="text-align:center;">P1</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>XSS対策OK、サロゲートペアOK</td>
+        </tr>
+        <tr>
+          <td>4</td><td>文字数（正常値）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>maxlength未設定多い</td>
+        </tr>
+        <tr>
+          <td>5</td><td>文字数（正常限界）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>電話番号11桁固定（10桁/ハイフン/12桁弾く）</td>
+        </tr>
+        <tr>
+          <td>6</td><td>文字数（異常値）</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>氏名1000字でURL超過</td>
+        </tr>
+        <tr>
+          <td>7</td><td>数値（正常値）</td><td style="text-align:center;">P1</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>境界値(1-9)正常動作</td>
+        </tr>
+        <tr>
+          <td>8</td><td>数値（異常値）</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge recheck">再訪推奨</span></td>
+          <td>S5: バグ4件, S6: 横展開完了。plan-id=1 料金改ざん差異 → H-02 (Open)</td>
+        </tr>
+        <tr>
+          <td>9</td><td>未入力</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge redone">再消化済み</span></td>
+          <td>全角スペース氏名バグ。横展開で全プラン通過確認。</td>
+        </tr>
+        <tr>
+          <td>10</td><td>単機能</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>全10プラン正常動作。フロー確認。</td>
+        </tr>
+        <tr>
+          <td>11</td><td>イベントによる状態変化</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge redone">再消化済み</span></td>
+          <td>ブラウザバック値消失(S5)。連絡方法切替正常(S6)。</td>
+        </tr>
+        <tr>
+          <td>12</td><td>経時変化</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>送信ボタン無効化なし（軽微）</td>
+        </tr>
+        <tr>
+          <td>13</td><td>切替えとデータ保持</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>ブラウザバック問題</td>
+        </tr>
+        <tr>
+          <td>14</td><td>初期値</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>初期値正常</td>
+        </tr>
+        <tr>
+          <td>15</td><td>変更・反映</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>料金計算正常</td>
+        </tr>
+        <tr>
+          <td>16</td><td>設定保持</td><td style="text-align:center;">—</td>
+          <td><span class="status-badge na">N/A</span></td>
+          <td>Webフォームのため対象外</td>
+        </tr>
+        <tr>
+          <td>17</td><td>キャンセル</td><td style="text-align:center;">P2</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>キャンセルボタンなし</td>
+        </tr>
+        <tr>
+          <td>18</td><td>複数因子の組合せ</td><td style="text-align:center;">P1</td>
+          <td><span class="status-badge redone">再消化済み</span></td>
+          <td>S6: 全10プラン構造差異マッピング。カップル限定バイパス発見。</td>
+        </tr>
+        <tr>
+          <td>19</td><td>登録と参照</td><td style="text-align:center;">P3</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>二重予約バグ。予約番号なし。</td>
+        </tr>
+        <tr>
+          <td>20</td><td>複数アカウント</td><td style="text-align:center;">—</td>
+          <td><span class="status-badge na">N/A</span></td>
+          <td>対象外</td>
+        </tr>
+        <tr>
+          <td>21</td><td>別デバイス</td><td style="text-align:center;">—</td>
+          <td><span class="status-badge na">N/A</span></td>
+          <td>対象外</td>
+        </tr>
+        <tr>
+          <td>22</td><td>登録と参照（参照側）</td><td style="text-align:center;">P3</td>
+          <td><span class="status-badge done">消化済み</span></td>
+          <td>予約完了フロー確認済み</td>
+        </tr>
+        <tr>
+          <td>23</td><td>禁則</td><td style="text-align:center;">P0</td>
+          <td><span class="status-badge redone">再消化済み</span></td>
+          <td>日付境界値3カ月と特定。業務ルールバイパス発見。</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#718096;margin-bottom:32px;">
+      消化済み: 12 &nbsp;|&nbsp; 再消化済み: 7 &nbsp;|&nbsp; 再訪推奨: 1（V08 — H-20260424-02 Open）&nbsp;|&nbsp; N/A: 3 &nbsp;|&nbsp; カバレッジ: <strong>19/20 = 95%</strong>
+    </p>
+
+    <!-- ===== TEST ITERATIONS ===== -->
+    <div class="section-title">実行テスト詳細</div>
+    <div class="test-cards">
+
+      <!-- Session 5, Phase 1 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">S5 Ph1</span>
+          Session #5 — 初期偵察 (hotel-s5-recon.spec.ts, 3テスト)
+          <span class="result-tag pass">3 passed</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">ゼロベースでサイト構造を把握。プラン一覧、フォーム構造、遷移フローを網羅的に調査。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">全10プラン (plan-id=0-9) のフォーム構造マッピング完了。date(text/datepicker), term(number), head-count(number), hidden×3。フロー: reserve.html → confirm.html → モーダル。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>プラン一覧ページの全プランリンクを取得</li>
+              <li>各プランの予約フォームDOM構造を解析</li>
+              <li>基本フロー（入力→確認→完了）の正常動作を確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 5, Phase 2 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">S5 Ph2</span>
+          Session #5 — P0観点 V10/V11/V02/V23 (hotel-s5-p0-validation.spec.ts, 18テスト)
+          <span class="result-tag mixed">バグ1件 / 気づき2件</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">最優先P0観点を網羅。単機能(V10)、状態変化(V11)、エラー表示(V02)、禁則(V23)。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">
+              <ul>
+                <li>V10: 全プラン正常動作、データ引継ぎOK</li>
+                <li>V11: ⚠️ ブラウザバックで宿泊数・人数がデフォルトにリセット (F-20260424-05)</li>
+                <li>V02: バリデーションメッセージが英語ベース (F-20260424-06)</li>
+                <li>V23: 当日・1年後・不正形式は全て弾かれる (F-20260424-09)</li>
+              </ul>
+            </div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>全プランの予約→確認→完了フローを実行</li>
+              <li>確認画面からブラウザバックで各フィールドの値保持を確認</li>
+              <li>必須項目未入力・不正日付でのバリデーションメッセージを記録</li>
+              <li>当日日付・過去日付・1年後の日付での禁則チェック</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 5, Phase 3 -->
+      <details class="test-card" open>
+        <summary>
+          <span class="iter-num">S5 Ph3</span>
+          Session #5 — P1/P2深掘り V03/V07/V08/V09/V12 (hotel-s5-p1p2-deep.spec.ts, 23テスト)
+          <span class="result-tag fail">バグ4件（Critical含む）</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">文字種(V03)、数値正常(V07)、数値異常(V08)、未入力(V09)、経時変化(V12)の深掘り。特にJS改ざんによるバリデーションバイパスを重点的に検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">
+              <ul>
+                <li>V03: XSSサニタイズOK、絵文字OK</li>
+                <li>V08: 🔴 <strong>Critical</strong> — hidden料金改ざんで0円予約 (F-01)、宿泊数0/人数0 (F-02)、100泊 (F-03)</li>
+                <li>V09: 🔴 全角/半角スペース氏名通過 (F-04)</li>
+                <li>V12: ボタン無効化なし（軽微）</li>
+              </ul>
+            </div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">欠陥仮定と狙い</div>
+            <div class="field-value">「HTML5属性(min/max/required)を改ざんしたらサーバ側で弾かれるか」を検証。hidden フィールドの料金改ざんも併せて実施。→ 結果: サーバ側バリデーション完全不在を確認。H-20260424-01 立案→Confirmed。</div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 6, Phase 1 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">S6 Ph1</span>
+          Session #6 — Probe P-01 GETパラメータ直打ち検証 (hotel-s6-probe-01.spec.ts, 5テスト)
+          <span class="result-tag pass">H-01 部分修正</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">H-20260424-01 の Probe: confirm.html に GET パラメータを直接構築してアクセスし、URL直打ちバイパスの可否を検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">
+              <ul>
+                <li>confirm.html は JS 状態管理で遷移。GET パラメータ直打ちでは機能しない (F-20260424-12)</li>
+                <li>required 除去 + 全空でも JS 追加バリデーションで一部ブロック</li>
+                <li><strong>結論</strong>: URL直打ちバイパスは不可。ただし reserve.html での JS 属性改ざんは引き続き有効。</li>
+              </ul>
+            </div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>confirm.html に不正パラメータ付きURLで直接アクセス</li>
+              <li>0円料金URLで予約ボタンの表示有無を確認</li>
+              <li>required 属性を全除去して空フォーム送信を試行</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 6, Phase 2 -->
+      <details class="test-card" open>
+        <summary>
+          <span class="iter-num">S6 Ph2</span>
+          Session #6 — 全プラン横展開 + 日付境界 + 連絡方法エッジ (hotel-s6-lateral-deep.spec.ts, 36テスト)
+          <span class="result-tag mixed">全プラン脆弱性確認 / 日付境界特定</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">Session 5 で発見した脆弱性を全10プランに横展開。各プランのフォーム構造差異をマッピングし、日付境界値と連絡方法切替のエッジケースも検証。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">
+              <ul>
+                <li>全10プランの構造差異を完全マッピング（term/head の min/max がプランごとに異なる）</li>
+                <li>plan-id=0,2,3: JS改ざん3種（宿泊数0/スペース氏名/料金0円）が全て通過</li>
+                <li>plan-id=1: 料金改ざんのみ弾かれる → H-20260424-02 起票</li>
+                <li>日付: +90日OK / +180日NG の粗特定</li>
+                <li>連絡方法: 切替時のデータクリーンアップは正常。10桁/ハイフン/12桁電話は弾かれる。</li>
+              </ul>
+            </div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">欠陥仮定</div>
+            <div class="field-value">「プランごとにバリデーションロジックが異なるのではないか」→ plan-id=1 で料金改ざん耐性の差異を発見。「日付の上限は固定日数ではなくカレンダー月ベースでは」→ 後の精密テストで「3カ月後」と特定。</div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 6, Phase 3 -->
+      <details class="test-card" open>
+        <summary>
+          <span class="iter-num">S6 Ph3</span>
+          Session #6 — plan-id=1再テスト + カップル限定 + 日付精密 (hotel-s6-deep-v2.spec.ts, 10テスト)
+          <span class="result-tag fail">バグ1件 (High)</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">Phase 2 の偽陰性修正（plan-id=1 の head-count min=2 問題）。カップル限定プランの業務ルールバイパス検証。日付境界の1日単位精密特定。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">
+              <ul>
+                <li>plan-id=1: 正しい min 値で再テスト → 宿泊数0/スペース氏名は通過（全プラン共通脆弱性確認）。<strong>料金改ざんのみ弾かれた（plan-id=1固有）。</strong></li>
+                <li>plan-id=8: 🔴 <strong>BUG</strong> — 1人予約（10,000円）/ 3泊（52,000円）が通過 (F-20260424-16)</li>
+                <li>日付: +91日OK / +92日NG → <strong>境界値「3カ月後」と特定</strong></li>
+              </ul>
+            </div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>plan-id=1 を head-count=2 で再テスト（偽陰性の修正）</li>
+              <li>plan-id=8 の head-count min=max=2 を JS 除去して 1 に変更 → 送信</li>
+              <li>plan-id=8 の term max=2 を JS 除去して 3 に変更 → 送信</li>
+              <li>+91,+92,+93,...,+99日 の日付で予約可否を1日単位で確認</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+      <!-- Session 6, Phase 4 -->
+      <details class="test-card">
+        <summary>
+          <span class="iter-num">S6 Ph4</span>
+          Session #6 — 日付境界値精密特定 (hotel-s6-date-boundary.spec.ts, 8テスト)
+          <span class="result-tag pass">境界値確定</span>
+        </summary>
+        <div class="card-body">
+          <div>
+            <div class="field-label">テスト意図</div>
+            <div class="field-value">Phase 2 で「+91日OK / +100日NG」と判明した日付境界の1日単位の精密特定。</div>
+          </div>
+          <div>
+            <div class="field-label">結果</div>
+            <div class="field-value">+92〜+99日の全てが弾かれた。<strong>境界値: +91日 (2026/07/24) OK / +92日 (2026/07/25) NG</strong>。今日から「3カ月後」（カレンダー月ベース）が予約可能期間の上限。</div>
+          </div>
+          <div class="full-width">
+            <div class="field-label">主要手順</div>
+            <div class="field-value"><ul>
+              <li>plan-id=0 で +92, +93, +94, +95, +96, +97, +98, +99 日の日付を入力</li>
+              <li>各日付で「予約内容を確認する」→ confirm.html 遷移の可否を記録</li>
+            </ul></div>
+          </div>
+        </div>
+      </details>
+
+    </div><!-- /.test-cards -->
+
+    <!-- ===== NEXT STEPS ===== -->
+    <div class="section-title">次セッションへの申し送り</div>
+    <div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;margin-bottom:32px;font-size:13px;">
+      <ol style="padding-left:20px;">
+        <li style="margin-bottom:6px;"><strong>P-20260424-02</strong>: 全10プランの料金改ざん横展開（正しい min 値で）。plan-id=1 のみ弾かれるパターンの確認。</li>
+        <li style="margin-bottom:6px;">plan-id=8 以外のプランでも業務ルール固有の min/max バイパス（例: plan-id=2 の term max=3 超え、plan-id=7 の head max=6 超え）。</li>
+        <li style="margin-bottom:6px;">日付境界値「3カ月」が月またぎで安定しているか（4/30→7/30, 5/1→7/31 等）。カレンダー月ベースの実装詳細を特定。</li>
+      </ol>
+    </div>
+
+  </div><!-- /.card -->
+
+</div><!-- /.container -->
+
+<!-- ===== FOOTER ===== -->
+<div class="report-footer">
+  Generated by QA Explorer (Kaz Sakata) &nbsp;|&nbsp; 2026-04-24 &nbsp;|&nbsp;
+  Session 5: ゼロベース探索 (44 tests) + Session 6: ナレッジ活用探索 (59 tests) = 103 tests, 0 failures
+</div>
+
+</body>
+</html>
