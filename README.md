@@ -41,17 +41,23 @@ qa-explorer/
 ├─ .github/
 │  ├─ copilot-instructions.md           # Copilot の基本原則(常時適用)
 │  └─ agents/
-│     └─ qa-explorer.agent.md           # ルンバ型エージェント本体
+│     ├─ qa-explorer.agent.md           # ルンバ型エージェント本体(自律探索)
+│     └─ qa-runner.agent.md             # テストケース駆動実行エージェント
 ├─ .prompts/
-│  └─ explore.prompt.md                 # /explore で起動するプロンプト
+│  ├─ explore.prompt.md                 # /explore で起動するプロンプト
+│  └─ run-cases.prompt.md              # /run-cases で起動するプロンプト
 ├─ qa-knowledge/
 │  ├─ viewpoints.md                     # 23観点リスト(基本形・不変)
 │  ├─ site-profiles.md                  # サイトタイプ別の着目ポイント(育っていく)
 │  └─ targets/
 │     ├─ _template/                     # 新規対象用のひな形
+│     │  ├─ findings.md
+│     │  ├─ derived-viewpoints.md
+│     │  └─ test-cases.md               # テストケース一覧のひな形(Runner モード用)
 │     └─ <target-slug>/                 # 対象ごとのナレッジ
 │        ├─ findings.md                 # Finding / Hypothesis / Probe の3層蓄積
-│        └─ derived-viewpoints.md       # 対象固有の派生観点
+│        ├─ derived-viewpoints.md       # 対象固有の派生観点
+│        └─ test-cases.md               # テストケース一覧(Runner モード用)
 ├─ reports/
 │  ├─ _template/                        # 新規対象用のひな形
 │  └─ <target-slug>/                    # 対象ごとのレポート
@@ -93,9 +99,47 @@ VS Code でリポジトリを開き、Copilot Chat を Agent モードに切り�
 
 ---
 
+## 2つのモード
+
+QA Explorer には **Explore モード** と **Runner モード** の2種類があります。
+
+### Explore モード — 自律探索 (`qa-explorer` + `/explore`)
+
+**何をするか**: 23観点リストをキッカケに、エージェントが自分でテストケースを考えながら探索します。
+「このサイトのどこが壊れているかを発見したい」ときに使います。
+
+**使うとき**:
+- テストケースがまだ無い新規対象を探索するとき
+- 観点ドリブンで網羅的に弱点を洗い出したいとき
+- バグの仮説を立てて深掘り検証したいとき
+
+### Runner モード — ケース駆動実行 (`qa-runner` + `/run-cases`)
+
+**何をするか**: ユーザーが用意したテストケース一覧(`test-cases.md`)をキッカケに、
+その手順と期待結果をそのまま Playwright で実行します。
+「このとおりテスト実行してね」というときに使います。
+
+**使うとき**:
+- 既存のテスト仕様書やチェックリストを自動実行したいとき
+- リグレッションテストとして決まったケース群を繰り返し回したいとき
+- 自律探索ではなく、確実に指定した手順を実行してほしいとき
+
+### どちらを使うべきか
+
+| 状況 | 使うモード |
+|---|---|
+| 初めての対象サイト、何が壊れているか分からない | **Explore** |
+| テストケース一覧がある、それを実行したい | **Runner** |
+| バグの仮説を深掘りしたい | **Explore** |
+| リグレッション確認、決まった手順を繰り返す | **Runner** |
+| 観点を網羅的に消化したい | **Explore** |
+| 仕様通りに動くか確認したい | **Runner** |
+
+---
+
 ## 使い方
 
-### 基本コマンド
+### Explore モード
 
 VS Code の Copilot Chat (Agent モード) で:
 
@@ -109,6 +153,23 @@ VS Code の Copilot Chat (Agent モード) で:
 /explore url=https://hotel-example-site.takeyaqa.dev/ja/plans.html intent=予約フォームのバリデーションを重点的に
 ```
 
+### Runner モード
+
+テストケースファイル(`qa-knowledge/targets/<target-slug>/test-cases.md`)を用意してから:
+
+```
+/run-cases url=<URL>
+```
+
+入力例:
+
+```
+/run-cases url=https://hotel-example-site.takeyaqa.dev/ja/plans.html
+```
+
+テストケースファイルは `qa-knowledge/targets/_template/test-cases.md` をコピーして
+`<target-slug>` フォルダに配置し、対象のテストケースを記入してください。
+
 ### 止め方
 
 チャットで「Stop」「止めて」「中断」のいずれかを入力すると、
@@ -116,9 +177,10 @@ VS Code の Copilot Chat (Agent モード) で:
 
 ### セッションを跨いで続きから再開
 
-同じ URL で再度 `/explore` を実行すると、エージェントは既存の `findings.md` を
-**全件読み直してから** 探索を始めます。前回立てた仮説のうち未検証のものがあれば、
-そこから優先的に検証に入ります。
+同じ URL で再度 `/explore` または `/run-cases` を実行すると、エージェントは前回の状態を引き継いで続きから再開します。
+
+- **Explore モード**: `findings.md` を全件読み直し、未検証の仮説があれば優先的に検証します。
+- **Runner モード**: `test-cases.md` の Status 欄(Not Run / Fail)を見て未消化ケースから再開します。
 
 ---
 
