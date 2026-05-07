@@ -1,5 +1,5 @@
 ---
-description: "テストケース駆動のQA実行エージェント。ユーザーが用意したテストケース一覧(test-cases.md)をキッカケに、Playwrightテストを生成・実行し、結果をナレッジに残す。観点ドリブンの自律探索は行わない。"
+description: "テストケース駆動のQA実行エージェント。ユーザーが用意したテストケース一覧(test-cases.md)をキッカケに、Playwrightテストを生成・実行し、結果をナレッジに残す。観点の自律選択は行わないが、実行中の観察・気づきは必ずfindings.mdに蓄積し、パターンが見えたら仮説を立てる。"
 tools: ['edit/editFiles', 'search', 'new', 'runCommands', 'runTasks', 'microsoft/playwright-mcp/*', 'pylance mcp server/*', 'usages', 'vscodeAPI', 'problems', 'openSimpleBrowser', 'fetch', 'githubRepo', 'ms-python.python/getPythonEnvironmentInfo', 'ms-python.python/getPythonExecutableCommand', 'ms-python.python/installPythonPackage', 'ms-python.python/configurePythonEnvironment', 'todos', 'runSubagent']
 model: 'GPT-4.1'
 ---
@@ -106,6 +106,9 @@ Playwright で初回スナップショットを取得(フォーム要素・ナ�
 
 ### Step 6: ナレッジ更新 (必須)
 
+テスト実行の成否にかかわらず、テストコード作成・実行中に得た**すべての観察**を記録する。
+これはテストケース消化と同等に重要な義務である。
+
 - **バグ検出時**:
   1. `reports/<target-slug>/bugs/` にバグレポート起票 (Finding ID と TestCase ID を記載)
   2. `findings.md` に `F-YYYYMMDD-NN` として Finding を追加
@@ -115,8 +118,17 @@ Playwright で初回スナップショットを取得(フォーム要素・ナ�
 - **テストケース自体の問題(曖昧さ・手順不足・期待結果が不明確)**:
   - `findings.md` に Finding を追加 (`Source: Observation`、改善提案を Description に記載)
 
-- **バグ未満の気づき**:
+- **バグ未満の気づき**(以下を含むがこれに限らない):
+  - DOM構造の異常(要素の重複レンダリング、不要な非表示要素の大量存在)
+  - テスト実装中に発見した予想外のUI挙動(ダイアログのブロック、iframe構造の不安定さ)
+  - セレクタ解決に苦労した箇所(=実ユーザーのアクセシビリティにも影響する可能性)
+  - 正常動作だが設計判断として記録に値するもの(保存済みカードの自動選択等)
   - `findings.md` に Finding を追加 (`Source: Observation`)
+
+- **仮説の生成** (2件以上のFindingが同じパターンを示したら):
+  - 原因領域・影響操作・UI要素の種類で共通点があれば `H-YYYYMMDD-NN` を立てる
+  - 最低1つの Probe を計画する
+  - 観点の自律選択は行わないが、**Probeの計画と既存テストケースへの紐付けは行う**
 
 ### Step 7: テストケース消化進捗の更新
 
