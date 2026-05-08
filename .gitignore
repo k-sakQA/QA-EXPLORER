@@ -2,6 +2,7 @@ node_modules/
 test-results/
 playwright-report/
 .DS_Store
+setting.json
 
 # 認証情報 (手動ログインで生成)
 storage/
@@ -9,3 +10,20 @@ storage/
 # Migration bundle (remove after applying)
 files/
 apply-knowledge-loop.sh
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# reports: _template と hotel-example-site-takeyaqa-dev 以外を除外
+reports/development-fansta-jp/
+reports/development-pocket-heroes-net/
+reports/dic-xflag-com/
+reports/www-gamesaien-com/
+reports/www-monster-strike-com/
+
+# qa-knowledge/targets: _template と hotel-example-site-takeyaqa-dev 以外を除外
+qa-knowledge/targets/development-fansta-jp/
+qa-knowledge/targets/development-pocket-heroes-net/
+qa-knowledge/targets/dic-xflag-com/
+qa-knowledge/targets/www-gamesaien-com/
+qa-knowledge/targets/www-monster-strike-com/
