@@ -14,6 +14,10 @@ apply-knowledge-loop.sh
 # Playwright MCP logs
 .playwright-mcp/
 
+# 顧客固有の Playwright config
+playwright.fansta.config.ts
+playwright.pocket-heroes.config.ts
+
 # reports: _template と hotel-example-site-takeyaqa-dev 以外を除外
 reports/development-fansta-jp/
 reports/development-pocket-heroes-net/
