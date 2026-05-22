@@ -19,3 +19,7 @@ apply-knowledge-loop.sh
 # reports: _template と hotel-example-site-takeyaqa-dev 以外を除外
 
 # qa-knowledge/targets: _template と hotel-example-site-takeyaqa-dev 以外を除外
+
+# tests/generated: hotel-* 以外を除外
+tests/generated/*
+!tests/generated/hotel-*
