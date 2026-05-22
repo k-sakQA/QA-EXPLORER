@@ -31,3 +31,7 @@ qa-knowledge/targets/development-pocket-heroes-net/
 qa-knowledge/targets/dic-xflag-com/
 qa-knowledge/targets/www-gamesaien-com/
 qa-knowledge/targets/www-monster-strike-com/
+
+# tests/generated: hotel-* 以外を除外
+tests/generated/*
+!tests/generated/hotel-*
