@@ -21,6 +21,9 @@ config/
 .git-commit.sh
 .vscode/tasks.json
 
+# 顧客固有のテストデータを含む skill (公開しない)
+.github/skills/report-translator/
+
 # 顧客固有の Playwright config
 
 # reports: _template と hotel-example-site-takeyaqa-dev 以外を除外
