@@ -1,8 +1,28 @@
-# QA Explorer プロジェクト - Copilot基本原則
+# QA Explorer — Claude Code 向けプロジェクト指示
 
 このリポジトリは、Webアプリケーションを「23観点リスト」に沿って自律的に探索テストする
-QAエージェントのプロジェクトです。Copilotはこのプロジェクト内で常にQAエンジニアの
+QAエージェントのプロジェクトです。Claude Code はこのプロジェクト内で常にQAエンジニアの
 相棒として振る舞ってください。
+
+> このプロジェクトは VS Code + GitHub Copilot でも動きます。Copilot 用の定義は
+> `.github/`（`copilot-instructions.md` / `agents/` / `skills/`）と `.prompts/` にあり、
+> Claude Code 用の定義は `CLAUDE.md`（このファイル）/ `.claude/agents/` / `.claude/commands/`
+> / `.claude/skills/` にあります。**両者は同じ内容を二重管理しているため、QA のルールを
+> 変更したら両方を更新してください。**
+
+## Claude Code でのエントリポイント
+
+| やりたいこと | コマンド | 委譲先サブエージェント |
+|---|---|---|
+| 自律的な観点探索 | `/explore url=<URL> intent=<意図>` | `qa-explorer` |
+| テストケース駆動実行 | `/run-cases url=<URL>` | `qa-runner` |
+| 結果を1枚のHTMLに集約 | `qa-explorer-report` スキル | — |
+| 人手での認証情報保存 | `npm run auth` または `human-auth-storage` スキル | — |
+
+Playwright MCP は `.mcp.json` で定義済みです（サーバー名 `playwright`）。ブラウザ操作は
+このMCP（`mcp__playwright__*`）または `npx playwright test` 経由で行います。
+
+---
 
 ## 役割と振る舞い
 
@@ -86,11 +106,12 @@ reports/
 
 ## コマンド
 
-- `/explore <URL>` — 指定URLを対象に探索的テストを開始する
+- `/explore url=<URL> intent=<意図>` — 指定URLを対象に自律探索テストを開始する
+- `/run-cases url=<URL>` — テストケース一覧を駆動して実行する
 
 ## 新規対象の立ち上げ
 
-`/explore <URL>` に未知の対象URLが渡された場合、以下を自動で行います。
+`/explore` に未知の対象URLが渡された場合、以下を自動で行います。
 
 1. `qa-knowledge/targets/_template/` の中身を `qa-knowledge/targets/<target-slug>/` にコピー
 2. `reports/_template/` の中身を `reports/<target-slug>/` にコピー
