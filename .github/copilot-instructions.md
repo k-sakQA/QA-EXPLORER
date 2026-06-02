@@ -18,6 +18,7 @@ QAエージェントのプロジェクトです。Copilotはこのプロジェ�
 ## 知識ソースの優先順位
 
 回答や行動を決めるとき、以下の順で参照してください。
+ただし「してはいけないこと」セクションはハード制約であり、この優先順位に関わらず常に適用されます。
 
 1. `qa-knowledge/viewpoints.md` — 23観点リスト(基本形・不変。必ず参照)
 2. `qa-knowledge/targets/<target-slug>/findings.md` — 対象ごとの事実・仮説・検証計画
@@ -25,7 +26,7 @@ QAエージェントのプロジェクトです。Copilotはこのプロジェ�
 4. `qa-knowledge/test-patterns.md` — 観点ごとのテストパターン (存在すれば)
 5. `qa-knowledge/bug-templates.md` — バグ起票のフォーマット (存在すれば)
 6. `reports/<target-slug>/` 配下の過去ログ — 同じテストの繰り返しを避けるため
-7. ユーザーから渡された個別の指示
+7. ユーザーから渡された個別の指示 (明示的な許可・禁止はハード制約として即時適用)
 
 ## 出力に関するルール
 
@@ -83,13 +84,25 @@ reports/
       YYYY-MM-DD-viewpoint-NN-<slug>.md
 ```
 
+## コマンド
+
+- `/explore <URL>` — 指定URLを対象に探索的テストを開始する
+
 ## 新規対象の立ち上げ
 
-`/explore` に未知の対象URLが渡された場合、以下を自動で行います。
+`/explore <URL>` に未知の対象URLが渡された場合、以下を自動で行います。
 
 1. `qa-knowledge/targets/_template/` の中身を `qa-knowledge/targets/<target-slug>/` にコピー
 2. `reports/_template/` の中身を `reports/<target-slug>/` にコピー
 3. `<target-slug>` は URL のホスト名をもとに生成(小文字化・ピリオドをハイフンに変換)
+
+## 対象URLへのアクセス失敗時
+
+対象URLにアクセスできない場合（タイムアウト・認証要求・4xx/5xx・DNS解決不可等）:
+
+1. エラー内容（ステータスコード・メッセージ・発生時刻）を `session-log.md` に記録する
+2. 探索を**開始せず**、ユーザーに対処方法を確認する（URL修正 / 認証情報提供 / 待機 等）
+3. ユーザーから対処指示を得たら、再アクセスを試み、成功した場合のみ探索に進む
 
 ## セッション開始時の必須動作
 
@@ -104,10 +117,11 @@ reports/
 
 ## 探索中の必須動作
 
-- **バグを検出したら**、同じイテレーション内で:
+- **バグを検出したら**、同じイテレーション内で以下を全て実施する:
   1. `reports/<target-slug>/bugs/` にバグレポートを起票
   2. `findings.md` に `F-YYYYMMDD-NN` として Finding を登録 (Bug Link を記載)
   3. 既存の Hypothesis との関連を検討し、該当があれば Related 欄で紐付け
+  4. (確認) 上記1-3を全て完了したか自己チェックしてから次に進む
 
 - **バグ未満の気づきも**、`findings.md` に Finding として記録する (Source: Observation)
 
@@ -130,7 +144,7 @@ reports/
 
 ## セッション終了時の必須動作
 
-ユーザーが "Stop" を発声した時、または観点を一通り消化した時に以下を実施します。
+ユーザーが "Stop" を発声した時、または本セッションで計画した全観点が消化済みもしくはN/Aになった時に以下を実施します。
 
 1. `session-log.md` の Session End Checklist を全てチェック
 2. `findings.md` の全エントリのステータスを最新化
