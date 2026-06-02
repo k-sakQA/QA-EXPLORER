@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 
-const TARGET_URL = 'https://development.pocket-heroes.net/home';
+const TARGET_URL = process.env.AUTH_TARGET_URL || 'https://example.com';
 const STORAGE_DIR = path.resolve(__dirname, '..', 'storage');
 const AUTH_FILE = path.join(STORAGE_DIR, 'auth.json');
 

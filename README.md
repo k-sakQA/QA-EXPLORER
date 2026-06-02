@@ -1,7 +1,7 @@
 # QA Explorer
 
 > **観点リスト**と**ナレッジ蓄積ループ**を使って、Webアプリケーションを自律的に探索的にテストするQAエージェント。
-> VS Code + GitHub Copilot（Claudeを想定） で動作します。
+> **Claude Code** と **VS Code + GitHub Copilot** の両方で動作します。
 
 ## このツールが目指すもの
 
@@ -39,21 +39,32 @@ npx playwright install
 npm run auth
 ```
 
-### Copilot Chat での実行コマンド
+### Claude Code での実行コマンド
 
-VS Code のチャットを **Agent モード** に切り替え、以下を入力して探索を開始します。
+ターミナルでリポジトリのルートから `claude` を起動し、以下のスラッシュコマンドを入力します。
+ブラウザ操作には Playwright MCP（`.mcp.json` で定義済み。初回は MCP サーバーの利用を承認）を使います。
 
 **自律探索モード:**
 ```
 /explore url=<テスト対象のURL> intent=<意図>
 # 例: /explore url=https://hotel-example-site.takeyaqa.dev intent=入力フォームのバリデーションを中心にテスト
 ```
-「intent=広く浅く」のようなざっくりした指示でも大丈夫です。
+「intent=広く浅く」のようなざっくりした指示でも大丈夫です。`/explore` は `qa-explorer`
+サブエージェントを起動します。
 
-**ケース駆動実行モード：** テストケースをチャット欄で添付し、以下を入力して実行します。
+**ケース駆動実行モード：**
 ```
-/run-cases url=<テスト対象のURL>
+/run-cases url=<テスト対象のURL> [caseFile=<テストケースのパス>]
 ```
+`caseFile` を省略すると `qa-knowledge/targets/<target-slug>/test-cases.md` を使います。
+`/run-cases` は `qa-runner` サブエージェントを起動します。
+
+### Copilot Chat での実行コマンド
+
+VS Code のチャットを **Agent モード** に切り替え、上記と同じ `/explore` / `/run-cases`
+コマンドを入力します（定義は `.prompts/` と `.github/agents/` 側）。
+
+---
 
 本エージェントは「観点リスト」を地図とし、「気づき → 仮説 → 検証」のループを自律的に回します。
 
@@ -100,14 +111,26 @@ QA Explorer には **Explore モード** と **Runner モード** の2種類が�
 
 ```
 qa-explorer/
-├─ .github/
+├─ CLAUDE.md                            # Claude Code の基本原則(常時適用)
+├─ .mcp.json                            # Playwright MCP サーバー定義(Claude Code 用)
+├─ .claude/                             # ── Claude Code 用 ──
+│  ├─ agents/
+│  │  ├─ qa-explorer.md                 # 自律探索サブエージェント
+│  │  └─ qa-runner.md                   # テストケース駆動実行サブエージェント
+│  ├─ commands/
+│  │  ├─ explore.md                     # /explore で起動
+│  │  ├─ run-cases.md                   # /run-cases で起動
+│  │  └─ qa-explorer-report.md          # レポート集約コマンド
+│  └─ skills/
+│     └─ human-auth-storage/            # 人手認証の保存スキル
+├─ .github/                             # ── GitHub Copilot 用 ──
 │  ├─ copilot-instructions.md           # Copilot の基本原則(常時適用)
 │  ├─ agents/
 │  │  ├─ qa-explorer.agent.md           # 自律探索エージェント
 │  │  └─ qa-runner.agent.md             # テストケース駆動実行エージェント
 │  └─ skills/
 │     └─ empirical-prompt-tuning/       # プロンプト改善スキル
-├─ .prompts/
+├─ .prompts/                            # Copilot 用プロンプト
 │  ├─ explore.prompt.md                 # /explore で起動
 │  └─ run-cases.prompt.md              # /run-cases で起動
 ├─ qa-knowledge/
