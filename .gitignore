@@ -7,9 +7,9 @@ setting.json
 # 認証情報 (手動ログインで生成)
 storage/
 
-# Migration bundle (remove after applying)
-files/
-apply-knowledge-loop.sh
+# 生成物 (HTMLレポート・スクリーンショット)
+qa-explorer-report-*.html
+/*.png
 
 # Playwright MCP logs
 .playwright-mcp/
