@@ -12,16 +12,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const AUTH_FILE = path.resolve(__dirname, 'storage', 'auth.json');
-const BASE_URL = 'https://development.pocket-heroes.net';
+// 認証確認先は環境変数で指定 (QA_BASE_URL + QA_AUTH_CHECK_PATH)
+const BASE_URL = process.env.QA_BASE_URL ?? 'https://hotel-example-site.takeyaqa.dev';
+const AUTH_CHECK_PATH = process.env.QA_AUTH_CHECK_PATH ?? '/home';
 const POLL_TIMEOUT = 60_000;
 const POLL_INTERVAL = 3_000;
 
 async function globalSetup(_config: FullConfig) {
+  // 認証不要な対象 (auth.json なし) では何もしない
   if (!fs.existsSync(AUTH_FILE)) {
-    throw new Error(
-      `認証ファイルが見つかりません: ${AUTH_FILE}\n` +
-      '先に npm run auth を実行してください。'
-    );
+    console.log('[globalSetup] storage/auth.json が無いため認証確認をスキップします (認証が必要な対象は npm run auth を先に実行)');
+    return;
   }
 
   console.log('[globalSetup] 認証確認を開始...');
@@ -32,10 +33,10 @@ async function globalSetup(_config: FullConfig) {
   const page = await context.newPage();
 
   try {
-    // /home にアクセスして認証有効性を確認 (URLポーリング)
-    await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded' });
+    // 認証確認パスにアクセスして認証有効性を確認 (URLポーリング)
+    await page.goto(`${BASE_URL}${AUTH_CHECK_PATH}`, { waitUntil: 'domcontentloaded' });
 
-    const ok = await waitForUrl(page, '/home', POLL_TIMEOUT, POLL_INTERVAL);
+    const ok = await waitForUrl(page, AUTH_CHECK_PATH, POLL_TIMEOUT, POLL_INTERVAL);
     if (!ok) {
       const currentUrl = page.url();
       throw new Error(
@@ -79,7 +80,7 @@ async function waitForUrl(
     await page.waitForTimeout(interval);
     // ページをリロードして再確認
     try {
-      await page.goto(`https://development.pocket-heroes.net${expectedPath}`, {
+      await page.goto(`${BASE_URL}${expectedPath}`, {
         waitUntil: 'domcontentloaded',
       });
     } catch {

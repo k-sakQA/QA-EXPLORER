@@ -5,6 +5,8 @@
 
 このファイルは、探索的テストで得た「事実・仮説・次の一手」を3層で蓄積します。
 セッション開始時に**必ず全件読む**ことで、前回の気づきを次のテストに活かします。
+肥大化したらクローズ済みエントリを `findings-archive.md` へ移動します
+(ルールは `qa-knowledge/loop-rules.md` の「肥大化対策」を参照)。
 
 - **Finding (F-)**: テスト中に観察した事実。バグ、気づき、仮説検証の結果。
 - **Hypothesis (H-)**: 複数のFindingから立てた、この対象の弱点・癖に関する仮説。
@@ -25,6 +27,7 @@ ID形式: `F-YYYYMMDD-NN` / `H-YYYYMMDD-NN` / `P-YYYYMMDD-NN` (同日内の通�
 - Fact: (観察した事実を1-2行で)
 - Bug Link: (バグの場合は reports/<target>/bugs/ のパス)
 - Related: (関連する Finding / Hypothesis ID)
+- Needs-Human: (仕様かバグか人間の判断が必要なら Yes + 質問を1行で。不要なら省略)
 
 -->
 

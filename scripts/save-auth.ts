@@ -16,7 +16,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 
-const TARGET_URL = 'https://development.pocket-heroes.net/home';
+// ログインページのURLは環境変数 QA_AUTH_URL で指定する
+const TARGET_URL = process.env.QA_AUTH_URL ?? 'https://hotel-example-site.takeyaqa.dev/ja/login.html';
 const STORAGE_DIR = path.resolve(__dirname, '..', 'storage');
 const AUTH_FILE = path.join(STORAGE_DIR, 'auth.json');
 
