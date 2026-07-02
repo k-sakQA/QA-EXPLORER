@@ -1,7 +1,7 @@
 # QA Explorer
 
 > **観点リスト**と**ナレッジ蓄積ループ**を使って、Webアプリケーションを自律的に探索的にテストするQAエージェント。
-> VS Code + GitHub Copilot（Claudeを想定） で動作します。
+> Claude Code / VS Code + GitHub Copilot で動作します。
 
 ## このツールが目指すもの
 
@@ -36,12 +36,14 @@ npx playwright install
 以下のコマンドを実行すると、ブラウザで手動ログインを行ってセッションをローカルPC上に保存できます。
 このローカルの認証情報を使ってPlaywrightがテストを実行できます。
 ```bash
-npm run auth
+QA_AUTH_URL=<ログインページのURL> npm run auth
 ```
+テスト実行時の対象は `QA_BASE_URL`(未指定時は hotel-example-site)、
+認証確認パスは `QA_AUTH_CHECK_PATH` で指定します。認証不要な対象では何も設定不要です。
 
-### Copilot Chat での実行コマンド
+### 実行コマンド
 
-VS Code のチャットを **Agent モード** に切り替え、以下を入力して探索を開始します。
+Claude Code、または VS Code チャット(**Agent モード**)で以下を入力して探索を開始します。
 
 **自律探索モード:**
 ```
@@ -100,22 +102,27 @@ QA Explorer には **Explore モード** と **Runner モード** の2種類が�
 
 ```
 qa-explorer/
+├─ CLAUDE.md                            # Claude Code 用の基本原則(常時適用・最小限)
+├─ .claude/commands/
+│  ├─ explore.md                        # /explore で起動 (Claude Code)
+│  ├─ run-cases.md                      # /run-cases で起動 (Claude Code)
+│  └─ qa-explorer-report.md             # /qa-explorer-report で起動
 ├─ .github/
 │  ├─ copilot-instructions.md           # Copilot の基本原則(常時適用)
-│  ├─ agents/
-│  │  ├─ qa-explorer.agent.md           # 自律探索エージェント
-│  │  └─ qa-runner.agent.md             # テストケース駆動実行エージェント
-│  └─ skills/
-│     └─ empirical-prompt-tuning/       # プロンプト改善スキル
+│  └─ agents/
+│     ├─ qa-explorer.agent.md           # 自律探索エージェントの手順(正準)
+│     └─ qa-runner.agent.md             # テストケース駆動実行の手順(正準)
 ├─ .prompts/
-│  ├─ explore.prompt.md                 # /explore で起動
-│  └─ run-cases.prompt.md              # /run-cases で起動
+│  ├─ explore.prompt.md                 # /explore で起動 (VS Code)
+│  └─ run-cases.prompt.md              # /run-cases で起動 (VS Code)
 ├─ qa-knowledge/
 │  ├─ viewpoints.md                     # 観点リスト(基本形・不変)
+│  ├─ loop-rules.md                     # ナレッジ蓄積ループの正準ルール
 │  └─ targets/
 │     ├─ _template/                     # 新規対象用のひな形
 │     └─ <target-slug>/                 # 対象ごとのナレッジ
 │        ├─ findings.md                 # Finding / Hypothesis / Probe の蓄積
+│        ├─ findings-archive.md         # クローズ済みエントリの退避先
 │        ├─ derived-viewpoints.md       # 対象固有の派生観点
 │        └─ test-cases.md              # テストケース一覧(Runner モード用)
 ├─ reports/
@@ -126,6 +133,10 @@ qa-explorer/
 │     └─ bugs/                          # GitHub Issue 形式のバグレポート
 └─ tests/generated/                     # エージェントが生成する Playwright spec
 ```
+
+エージェントの手順は `.github/agents/*.agent.md`、記録ルールは
+`qa-knowledge/loop-rules.md` にそれぞれ1箇所だけ定義し、Claude Code /
+Copilot の両方から参照します(重複定義を持たない)。
 
 `<target-slug>` は対象URLのホスト名から自動生成されます。
 例: `hotel-example-site.takeyaqa.dev` → `hotel-example-site-takeyaqa-dev`
