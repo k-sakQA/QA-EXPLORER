@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Explorer Report — YYYY-MM-DD</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f6fa; color: #2d3748; font-size: 14px; line-height: 1.6; }
+
+    .report-header { background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: #fff; padding: 28px 32px 24px; }
+    .report-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .report-header .meta { font-size: 12px; color: #a0aec0; }
+    .report-header .target-url { color: #63b3ed; font-size: 13px; margin-top: 2px; }
+
+    .summary-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; padding: 24px 32px; background: #fff; border-bottom: 1px solid #e2e8f0; }
+    .summary-card { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; text-align: center; }
+    .summary-card .num { font-size: 32px; font-weight: 800; line-height: 1; }
+    .summary-card .label { font-size: 12px; color: #718096; margin-top: 6px; }
+    .summary-card .sub { font-size: 11px; color: #a0aec0; margin-top: 2px; }
+    .summary-card.bugs .num { color: #e53e3e; }
+    .summary-card.hypo .num { color: #805ad5; }
+    .summary-card.ask  .num { color: #d69e2e; }
+    .summary-card.cov  .num { color: #38a169; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px; }
+    .section-title { font-size: 16px; font-weight: 700; color: #1a202c; border-left: 4px solid #3182ce; padding-left: 12px; margin: 32px 0 16px; }
+    .section-title:first-of-type { margin-top: 0; }
+
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; margin-bottom: 32px; }
+    .card h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #1a202c; }
+    .card .target-sub { font-size: 12px; color: #718096; margin-bottom: 24px; }
+    .empty-note { color: #a0aec0; font-style: italic; font-size: 13px; padding: 12px 0; }
+
+    /* ===== A. 担当者所見 ===== */
+    .insight-box { background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 8px; padding: 16px 20px; margin-bottom: 8px; }
+    .insight-box .who { font-size: 11px; font-weight: 700; color: #2b6cb0; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .insight-box p { font-size: 14px; color: #2d3748; line-height: 1.8; }
+    .insight-box .weak { color: #c53030; font-weight: 600; }
+
+    /* ===== B. 検出バグ ===== */
+    .bug-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+    .bug-table th { background: #edf2f7; font-size: 12px; font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid #cbd5e0; color: #4a5568; }
+    .bug-table td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .bug-table .finding-id { font-family: monospace; font-size: 12px; color: #718096; white-space: nowrap; }
+    .bug-table .bug-title { font-weight: 600; }
+    .bug-table .bug-title a { color: #2b6cb0; text-decoration: none; }
+    .bug-table .bug-title a:hover { text-decoration: underline; }
+    .bug-table .bug-title a::after { content: " ↗"; font-size: 11px; color: #a0aec0; }
+    .bug-table .viewpoint-tag { display: inline-block; background: #ebf8ff; color: #2b6cb0; border-radius: 4px; padding: 1px 7px; font-size: 11px; margin-top: 4px; }
+    .bug-table .summary { font-size: 13px; color: #4a5568; margin-top: 4px; }
+    .bug-table details { margin-top: 6px; }
+    .bug-table details summary { cursor: pointer; font-size: 12px; color: #718096; }
+    .bug-table details ol { font-size: 12px; color: #4a5568; padding-left: 20px; margin-top: 4px; }
+
+    .badge { display: inline-block; border-radius: 9999px; font-size: 11px; font-weight: 700; padding: 2px 10px; white-space: nowrap; }
+    .badge.critical { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .badge.high     { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+    .badge.medium   { background: #fffff0; color: #975a16; border: 1px solid #f6e05e; }
+    .badge.low      { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+
+    /* ===== C. 仮説検証ストーリー ===== */
+    .hypo-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; background: #fff; }
+    .hypo-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .hypo-id { font-family: monospace; font-size: 12px; background: #faf5ff; color: #553c9a; border: 1px solid #d6bcfa; border-radius: 4px; padding: 1px 8px; }
+    .hypo-status { border-radius: 9999px; font-size: 11px; font-weight: 700; padding: 2px 10px; }
+    .hypo-status.confirmed { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+    .hypo-status.rejected  { background: #edf2f7; color: #718096; border: 1px solid #cbd5e0; }
+    .hypo-status.open      { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+    .hypo-head .stmt { font-weight: 600; font-size: 14px; }
+    .flow { list-style: none; }
+    .flow li { position: relative; padding: 0 0 12px 22px; font-size: 13px; color: #4a5568; }
+    .flow li::before { content: ""; position: absolute; left: 4px; top: 6px; width: 9px; height: 9px; border-radius: 50%; }
+    .flow li::after { content: ""; position: absolute; left: 8px; top: 17px; bottom: -2px; width: 1.5px; background: #e2e8f0; }
+    .flow li:last-child::after { display: none; }
+    .flow li .step { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.03em; }
+    .flow li.f::before { background: #38b2ac; } .flow li.f .step { color: #2c7a7b; }
+    .flow li.h::before { background: #805ad5; } .flow li.h .step { color: #553c9a; }
+    .flow li.p::before { background: #805ad5; } .flow li.p .step { color: #553c9a; }
+    .flow li.r::before { background: #e53e3e; } .flow li.r .step { color: #c53030; }
+    .flow a { color: #2b6cb0; text-decoration: none; }
+    .flow a:hover { text-decoration: underline; }
+    .hypo-card.compact p { font-size: 13px; color: #4a5568; margin-top: 8px; }
+    .learn { color: #2d3748; font-weight: 600; }
+
+    /* ===== D. 次の一手 ===== */
+    .next-table { width: 100%; border-collapse: collapse; }
+    .next-table td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px; vertical-align: top; }
+    .next-table td:first-child { width: 130px; font-weight: 700; font-size: 12px; white-space: nowrap; }
+    .next-table tr.human td:first-child { color: #2b6cb0; }
+    .next-table tr.ai td:first-child    { color: #553c9a; }
+    .next-table tr.manual td:first-child{ color: #c53030; }
+
+    /* ===== カバレッジ ===== */
+    .cov-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    .cov-table th { background: #edf2f7; font-size: 12px; font-weight: 600; text-align: left; padding: 8px 12px; border-bottom: 2px solid #cbd5e0; color: #4a5568; }
+    .cov-table th:first-child { width: 40px; text-align: right; }
+    .cov-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+    .cov-table td:first-child { text-align: right; color: #a0aec0; font-size: 12px; }
+    .status-badge { display: inline-block; border-radius: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; }
+    .status-badge.done    { background: #c6f6d5; color: #22543d; }
+    .status-badge.recheck { background: #feebc8; color: #7b341e; }
+    .status-badge.todo    { background: #e9d8fd; color: #44337a; }
+    .status-badge.na      { background: #e2e8f0; color: #718096; }
+
+    /* ===== テストカード ===== */
+    .test-cards { display: flex; flex-direction: column; gap: 12px; }
+    details.test-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+    details.test-card summary { cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: #f7fafc; list-style: none; font-weight: 600; font-size: 13px; }
+    details.test-card[open] summary { border-bottom: 1px solid #e2e8f0; }
+    details.test-card summary::-webkit-details-marker { display: none; }
+    details.test-card summary::before { content: "▶"; font-size: 10px; color: #a0aec0; transition: transform 0.15s; flex-shrink: 0; }
+    details.test-card[open] summary::before { transform: rotate(90deg); }
+    .test-card .iter-num { background: #ebf8ff; color: #2b6cb0; border-radius: 9999px; font-size: 11px; font-weight: 700; padding: 2px 9px; }
+    .test-card .result-tag { margin-left: auto; border-radius: 4px; font-size: 11px; font-weight: 700; padding: 2px 9px; }
+    .result-tag.fail     { background: #fff5f5; color: #c53030; border: 1px solid #fc8181; }
+    .result-tag.pass     { background: #f0fff4; color: #276749; border: 1px solid #68d391; }
+    .result-tag.rejected { background: #e2e8f0; color: #718096; border: 1px solid #cbd5e0; }
+    .result-tag.mixed    { background: #fffaf0; color: #c05621; border: 1px solid #f6ad55; }
+    .test-card .card-body { padding: 16px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .test-card .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #a0aec0; margin-bottom: 4px; }
+    .test-card .field-value { font-size: 13px; color: #2d3748; }
+    .test-card .field-value ul { padding-left: 18px; }
+    .full-width { grid-column: 1 / -1; }
+
+    .report-footer { background: #1a202c; color: #718096; text-align: center; padding: 20px; font-size: 12px; margin-top: 48px; }
+
+    @media print {
+      body { background: #fff; font-size: 12px; }
+      .card, .hypo-card { page-break-inside: avoid; border: 1px solid #ccc; }
+      details.test-card summary::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!--
+  QA Explorer レポートテンプレート (参照実装)
+  各セクションにサンプルデータを1件ずつ入れてある。生成時はこのファイルをベースに
+  データ部分を差し替え、対象ごとに .card を繰り返す。
+  バグへのリンクはプロジェクトルートからの相対パス (reports/<slug>/bugs/*.md)。
+  レポートはプロジェクトルートに保存するので、そのままブラウザ/エディタで開ける。
+-->
+
+<div class="report-header">
+  <h1>QA Explorer Report</h1>
+  <div class="meta">Generated: YYYY-MM-DD &nbsp;|&nbsp; by QA Explorer Report Skill</div>
+  <div class="target-url">Target: https://example.com/</div>
+</div>
+
+<div class="summary-section">
+  <div class="summary-card bugs"><div class="num">7</div><div class="label">検出バグ</div></div>
+  <div class="summary-card hypo"><div class="num">4</div><div class="label">仮説</div><div class="sub">Confirmed 3 / Rejected 1 / Open 0</div></div>
+  <div class="summary-card ask"><div class="num">3</div><div class="label">人間への依頼</div><div class="sub">確認依頼 2 / 手動テスト 1</div></div>
+  <div class="summary-card cov"><div class="num">100%</div><div class="label">観点カバレッジ</div></div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <h2>target-slug</h2>
+    <div class="target-sub">URL: … | Focus: … | テスト日: … | セッション数: N | 消化観点: NN/NN</div>
+
+    <!-- ===== A. 担当者所見 ===== -->
+    <div class="section-title">テスト担当者(AI)からの所見</div>
+    <div class="insight-box">
+      <div class="who">QA EXPLORER としての見立て</div>
+      <p>このサイトの弱点は<span class="weak">「入力値の保持と復元」</span>に集中しています。…(Confirmed な仮説の Statement/Notes を素材に、3〜5行で「どこが弱いか・何が堅牢だったか・次に人手で見るべきこと」を書く)</p>
+    </div>
+
+    <!-- ===== B. 検出バグ一覧 (独立セクション・レポートへのリンク付き) ===== -->
+    <div class="section-title">検出バグ一覧(N件)</div>
+    <table class="bug-table">
+      <thead><tr><th>Finding ID</th><th>タイトル / 観点</th><th>Severity</th><th>概要と再現手順</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="finding-id">F-YYYYMMDD-NN</td>
+          <td>
+            <div class="bug-title"><a href="reports/target-slug/bugs/YYYY-MM-DD-viewpoint-NN-slug.md">予約完了後に二重予約が可能</a></div>
+            <span class="viewpoint-tag">観点19 登録と参照</span>
+          </td>
+          <td><span class="badge high">High</span></td>
+          <td class="summary">
+            バグの概要2〜3文。
+            <details>
+              <summary>再現手順を表示</summary>
+              <ol><li>手順1</li><li>手順2</li><li>手順3</li></ol>
+            </details>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ===== C. 発見 → 仮説 → 検証 → 帰結 ===== -->
+    <div class="section-title">発見 → 仮説 → 検証 → 帰結</div>
+
+    <div class="hypo-card">
+      <div class="hypo-head">
+        <span class="hypo-id">H-YYYYMMDD-NN</span>
+        <span class="hypo-status confirmed">Confirmed</span>
+        <span class="stmt">仮説の短いタイトル</span>
+      </div>
+      <ul class="flow">
+        <li class="f"><span class="step">発見(根拠)</span>Born from の Finding を「F-ID: 事実」形式で列挙し、共通する匂いを1行で。</li>
+        <li class="h"><span class="step">仮説</span>Statement の要約。</li>
+        <li class="p"><span class="step">検証(Probe P-YYYYMMDD-NN)</span>Probe の Plan 要約 → Result 要約。</li>
+        <li class="r"><span class="step">帰結と新たな気づき</span>起票バグ(<a href="reports/target-slug/bugs/xxx.md">F-ID Severity</a>)へのリンクと、Notes から得た「次に活きる気づき」。</li>
+      </ul>
+    </div>
+
+    <div class="hypo-card compact">
+      <div class="hypo-head">
+        <span class="hypo-id">H-YYYYMMDD-NN</span>
+        <span class="hypo-status rejected">Rejected</span>
+        <span class="stmt">棄却された仮説のタイトル</span>
+      </div>
+      <p>検証の結果、実装は正常。誤検出の原因(テスト側の学び)を1〜2文で。<span class="learn">棄却された仮説もテスト設計の学びとして報告する。</span></p>
+    </div>
+
+    <!-- ===== カバレッジ ===== -->
+    <div class="section-title">観点カバレッジ</div>
+    <table class="cov-table">
+      <thead><tr><th>No</th><th>観点</th><th style="width:50px;text-align:center;">優先度</th><th style="width:110px;">状態</th><th>備考</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>観点名</td><td style="text-align:center;">P0</td><td><span class="status-badge done">消化済み</span></td><td>備考(関連 F/H ID)</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ===== 実行したテストの内容 ===== -->
+    <div class="section-title">実行したテストの内容</div>
+    <div class="test-cards">
+      <details class="test-card">
+        <summary><span class="iter-num">Iter N</span> Session #N — 観点NN タイトル <span class="result-tag fail">バグN件</span></summary>
+        <div class="card-body">
+          <div><div class="field-label">テスト意図</div><div class="field-value">…</div></div>
+          <div><div class="field-label">結果</div><div class="field-value">…</div></div>
+          <div class="full-width"><div class="field-label">主要手順</div><div class="field-value"><ul><li>…</li></ul></div></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- ===== D. 次の一手 (最終セクション) ===== -->
+    <div class="section-title">次の一手(人とAIの分担)</div>
+    <table class="next-table">
+      <tr class="human"><td>人間に依頼</td><td>仕様かバグか判断が必要な Observation(Needs-Human: Yes の Finding)を質問形式で列挙。</td></tr>
+      <tr class="ai"><td>AIが次回検証</td><td>Open な Hypothesis / Planned な Probe を列挙。全件クローズならその旨。</td></tr>
+      <tr class="manual"><td>手動テスト候補</td><td>manual-tests.md の候補(MT-ID・優先度付き)。無ければ「起票なし」。</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="report-footer">Generated by QA-Explorer(Presented by Kaz Sakata) &nbsp;|&nbsp; YYYY-MM-DD</div>
+
+</body>
+</html>

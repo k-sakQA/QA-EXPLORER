@@ -22,18 +22,10 @@ model: 'GPT-4.1'
 
 ### Step 1: 対象フォルダの存在確認と初期化
 
-`qa-knowledge/targets/<target-slug>/findings.md` の存在を確認。
-
-- **存在する場合 (継続セッション)**:
-  1. `findings.md` を**全件**読む
-  2. `reports/<target-slug>/coverage.md` を読み、テストケース消化状況を把握
-  3. Open 状態の Hypothesis、Planned 状態の Probe を把握
-  4. 既存の session-log の最大 Session 番号を確認し、+1 する
-
-- **存在しない場合 (新規対象)**:
-  1. `qa-knowledge/targets/_template/` の中身を `qa-knowledge/targets/<target-slug>/` へコピー
-  2. `reports/_template/` の中身を `reports/<target-slug>/` へコピー
-  3. session_number = 1
+`qa-knowledge/loop-rules.md` を読み、以後そのルールに従う。
+`qa-knowledge/targets/<target-slug>/findings.md` が存在すれば loop-rules の
+「セッション開始時」を実施(継続セッション)。存在しなければ `_template/` から
+対象フォルダを立ち上げる(新規対象、session_number = 1)。
 
 ### Step 2: テストケースを読み込む
 
@@ -106,29 +98,17 @@ Playwright で初回スナップショットを取得(フォーム要素・ナ�
 
 ### Step 6: ナレッジ更新 (必須)
 
-テスト実行の成否にかかわらず、テストコード作成・実行中に得た**すべての観察**を記録する。
-これはテストケース消化と同等に重要な義務である。
+テスト実行の成否にかかわらず、テストコード作成・実行中に得た**すべての観察**を
+`qa-knowledge/loop-rules.md` の「探索中 (必須)」に従って記録する。
+これはテストケース消化と同等に重要な義務である。Runner モード固有の補足:
 
-- **バグ検出時**:
-  1. `reports/<target-slug>/bugs/` にバグレポート起票 (Finding ID と TestCase ID を記載)
-  2. `findings.md` に `F-YYYYMMDD-NN` として Finding を追加
-     (`Source: TestCase`、`TestCase ID` フィールドに該当ケース ID を記載)
-  3. 既存の Hypothesis との関連を検討し、該当があれば Related 欄で紐付け
-
-- **テストケース自体の問題(曖昧さ・手順不足・期待結果が不明確)**:
-  - `findings.md` に Finding を追加 (`Source: Observation`、改善提案を Description に記載)
-
-- **バグ未満の気づき**(以下を含むがこれに限らない):
-  - DOM構造の異常(要素の重複レンダリング、不要な非表示要素の大量存在)
-  - テスト実装中に発見した予想外のUI挙動(ダイアログのブロック、iframe構造の不安定さ)
-  - セレクタ解決に苦労した箇所(=実ユーザーのアクセシビリティにも影響する可能性)
-  - 正常動作だが設計判断として記録に値するもの(保存済みカードの自動選択等)
-  - `findings.md` に Finding を追加 (`Source: Observation`)
-
-- **仮説の生成** (2件以上のFindingが同じパターンを示したら):
-  - 原因領域・影響操作・UI要素の種類で共通点があれば `H-YYYYMMDD-NN` を立てる
-  - 最低1つの Probe を計画する
-  - 観点の自律選択は行わないが、**Probeの計画と既存テストケースへの紐付けは行う**
+- バグ検出時の Finding は `Source: TestCase` とし、`TestCase ID` フィールドに
+  該当ケース ID を記載する(バグレポートにも TestCase ID を記載)
+- テストケース自体の問題(曖昧さ・手順不足・期待結果が不明確)は Fail とせず
+  `Source: Observation` の Finding として改善提案を記録する
+- バグ未満の気づきの例: DOM構造の異常、予想外のUI挙動、セレクタ解決に苦労した箇所
+  (実ユーザーのアクセシビリティに影響する可能性)、記録に値する設計判断
+- 観点の自律選択は行わないが、**Probe の計画と既存テストケースへの紐付けは行う**
 
 ### Step 7: テストケース消化進捗の更新
 
@@ -150,18 +130,10 @@ Playwright で初回スナップショットを取得(フォーム要素・ナ�
 
 ## セッション終了処理 (必須)
 
-1. `session-log.md` の Session End Checklist を全てチェック
-2. `findings.md` の全エントリのステータスを最新化
-3. `test-cases.md` の Status 欄を最新化
-4. `reports/<target-slug>/coverage.md` の状態欄を最新化
-5. `session-log.md` の Session Summary を埋める
-   - 消化したテストケース数 / 総数
-   - Pass / Fail / Blocked / Skipped の内訳
-   - 検出バグ数
-   - 新規 Finding / Hypothesis 数
-   - Fail のまま残ったケース一覧
-6. 「次セッションへの申し送り」を 1-3 行で書く
-7. ユーザーに以下をサマリ報告:
+`qa-knowledge/loop-rules.md` の「セッション終了時」(findings 肥大化対策を含む) に加え、
+`test-cases.md` の Status 欄を最新化し、Session Summary に Pass / Fail / Blocked /
+Skipped の内訳と Fail のまま残ったケース一覧を記録する。
+そのうえでユーザーに以下をサマリ報告:
    - 消化ケース数 / 総数、検出バグ数
    - 新規 Finding 数
    - Fail のまま残ったケース
