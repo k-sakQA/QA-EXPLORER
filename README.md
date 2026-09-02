@@ -50,12 +50,22 @@ Claude Code、または VS Code チャット(**Agent モード**)で以下を入
 /explore url=<テスト対象のURL> intent=<意図>
 # 例: /explore url=https://hotel-example-site.takeyaqa.dev intent=入力フォームのバリデーションを中心にテスト
 ```
-「intent=広く浅く」のようなざっくりした指示でも大丈夫です。
+「intent=広く浅く」のようなざっくりした指示でも大丈夫です。`/explore` は `qa-explorer`
+サブエージェントを起動します。
 
-**ケース駆動実行モード：** テストケースをチャット欄で添付し、以下を入力して実行します。
+**ケース駆動実行モード：**
 ```
-/run-cases url=<テスト対象のURL>
+/run-cases url=<テスト対象のURL> [caseFile=<テストケースのパス>]
 ```
+`caseFile` を省略すると `qa-knowledge/targets/<target-slug>/test-cases.md` を使います。
+`/run-cases` は `qa-runner` サブエージェントを起動します。
+
+### Copilot Chat での実行コマンド
+
+VS Code のチャットを **Agent モード** に切り替え、上記と同じ `/explore` / `/run-cases`
+コマンドを入力します（定義は `.prompts/` と `.github/agents/` 側）。
+
+---
 
 本エージェントは「観点リスト」を地図とし、「気づき → 仮説 → 検証」のループを自律的に回します。
 
