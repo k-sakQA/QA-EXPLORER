@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const AUTH_FILE = path.resolve(__dirname, 'storage', 'auth.json');
+const AUTH_FILE = path.resolve(__dirname, 'storage', process.env.QA_AUTH_FILE ?? 'auth.json');
 
 export default defineConfig({
   testDir: './tests/generated',

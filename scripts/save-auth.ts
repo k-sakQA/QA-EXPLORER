@@ -17,9 +17,10 @@ import * as path from 'path';
 import * as readline from 'readline';
 
 // ログインページのURLは環境変数 QA_AUTH_URL で指定する
+// 保存先ファイル名は環境変数 QA_AUTH_FILE で指定する (省略時 auth.json)
 const TARGET_URL = process.env.QA_AUTH_URL ?? 'https://hotel-example-site.takeyaqa.dev/ja/login.html';
 const STORAGE_DIR = path.resolve(__dirname, '..', 'storage');
-const AUTH_FILE = path.join(STORAGE_DIR, 'auth.json');
+const AUTH_FILE = path.join(STORAGE_DIR, process.env.QA_AUTH_FILE ?? 'auth.json');
 
 async function waitForEnter(message: string): Promise<void> {
   const rl = readline.createInterface({
