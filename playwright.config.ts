@@ -6,7 +6,6 @@ const AUTH_FILE = path.resolve(__dirname, 'storage', 'auth.json');
 
 export default defineConfig({
   testDir: './tests/generated',
-  globalSetup: './playwright.global-setup.ts',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,
