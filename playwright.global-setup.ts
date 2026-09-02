@@ -11,7 +11,8 @@ import { chromium, type FullConfig } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const AUTH_FILE = path.resolve(__dirname, 'storage', 'auth.json');
+// 認証ファイル名は環境変数で指定可能 (save-auth.ts の QA_AUTH_FILE と同じ規約)
+const AUTH_FILE = path.resolve(__dirname, 'storage', process.env.QA_AUTH_FILE ?? 'auth.json');
 // 認証確認先は環境変数で指定 (QA_BASE_URL + QA_AUTH_CHECK_PATH)
 const BASE_URL = process.env.QA_BASE_URL ?? 'https://hotel-example-site.takeyaqa.dev';
 const AUTH_CHECK_PATH = process.env.QA_AUTH_CHECK_PATH ?? '/home';
