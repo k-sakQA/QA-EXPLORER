@@ -12,6 +12,9 @@ qa-explorer / qa-runner / Claude Code コマンドはすべてこのファイル
 qa-knowledge/
   viewpoints.md                  # 23観点リスト(基本形・読み取り専用)
   targets/<target-slug>/
+    risk-input.md                # [前段/任意] リスク分析の入力(ヒアリング・資料)
+    risk-register.md             # [前段/任意] リスク一覧(業務フロー単位・要人間承認)
+    test-charters.md             # [前段/任意] テストチャーター(要人間承認)
     findings.md                  # Finding / Hypothesis / Probe の蓄積(核)
     findings-archive.md          # クローズ済みエントリの退避先(肥大化対策)
     derived-viewpoints.md        # 対象固有の派生観点 (DV-YYYYMMDD-NN)
@@ -100,6 +103,19 @@ Playwrightがタイムアウト後にテストを強制終了した**結果**に
 「再訪推奨」→「再消化済み」にできるのは: 引き金 Hypothesis が Confirmed になり関連バグを
 全て起票した、または Rejected になったとき。Hypothesis が Open のまま再訪した場合は
 Probe の追加実施扱いとし「再訪推奨」を維持。
+
+## 前段(リスクベースド)との関係 — 任意
+
+`/risk-plan` → `/risk-design` を通した場合のみ以下が加わる。通さない単独の探索的テストも
+正当な使い方であり、前段は必須ではない。
+
+- `risk-register.md` / `test-charters.md` は `Review-Status: Approved` でなければ
+  後続工程の入力にしない。エージェントが自分で Approved にしてはならない
+- 単独探索で見つかった「リスク分析が想定していなかった問題」は、
+  `risk-register.md` の「探索由来のリスク候補」に Finding ID 付きで追記する
+  (探索 → 計画の循環。次回の `/risk-plan` で正式に評価する)
+- チャーター駆動で探索した場合は、`test-charters.md` の「状態」欄を更新する。
+  `未確認のまま終了` は残存リスクとして報告に含める
 
 ## 観点リストの扱い
 
