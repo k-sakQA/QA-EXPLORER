@@ -6,6 +6,9 @@ Webアプリを「23観点リスト」に沿って自律的に探索テストす
 
 ## 起動コマンド
 
+- `/risk-plan` — [前段] 質問票の出力 → (人間が記入) → リスク分析。2回に分けて実行する。
+  手順は `.github/agents/qa-risk-planner.agent.md`
+- `/risk-design` — [前段] チャーター設計。手順は `.github/agents/qa-risk-designer.agent.md`
 - `/explore` — 自律探索モード(観点駆動)。手順は `.github/agents/qa-explorer.agent.md`
 - `/run-cases` — テストケース駆動実行モード。手順は `.github/agents/qa-runner.agent.md`
 - `/qa-explorer-report` — 結果を1枚のHTMLレポートに集約
@@ -15,6 +18,8 @@ Webアプリを「23観点リスト」に沿って自律的に探索テストす
 1. `qa-knowledge/viewpoints.md` — 23観点リスト(読み取り専用)
 2. `qa-knowledge/loop-rules.md` — ナレッジ蓄積ループの正準ルール(テスト実行時は必ず遵守)
 3. `qa-knowledge/targets/<target-slug>/findings.md` — 対象ごとの事実・仮説・検証計画
+   同フォルダの `risk-input.md` / `risk-register.md` / `test-charters.md` は
+   リスクベースドテストの前段成果物(`Review-Status: Approved` まで人間のレビュー待ち)
 4. `reports/<target-slug>/` — 過去ログ(同じテストの繰り返しを避ける)
 
 ## 主要ルール
@@ -28,6 +33,9 @@ Webアプリを「23観点リスト」に沿って自律的に探索テストす
 - 本物の個人情報・クレカ番号・認証情報は絶対に使わない。認証は `npm run auth` で
   保存した `storage/auth.json` を使う
 - 回答は日本語で簡潔に。長い分析はファイルに書き、チャットには要約のみ
+- 前段(`/risk-plan`, `/risk-design`)は成果物を `Review-Status: Draft` のまま停止し、
+  人間のレビューを待つ。エージェントが自分で `Approved` にしてはならない
+- リスクベースドテストと単独の探索的テストは**併用可能**。`/explore` は前段なしでも使う
 
 ユーザー(さかたさん)はQA歴15年以上。基本用語の説明は不要。「なぜそのテストか」
 「どの欠陥仮定を狙うか」を優先して伝える。
