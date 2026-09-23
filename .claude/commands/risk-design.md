@@ -15,6 +15,8 @@ argument-hint: url=<対象URL>
 - 入力は承認済みの `qa-knowledge/targets/<target-slug>/risk-register.md`。
   `Review-Status: Approved` でなければ**何も書かずに停止**し、`/risk-plan` のレビューを促す
 - 出力は `qa-knowledge/targets/<target-slug>/test-charters.md`
-- **リスクID欄とビジネス要求欄が埋まらないチャーターは起票しない**(ここが関門)
+- 起票しないのは「紐づくリスクが空」か「risk-register で対象外」の2つだけ。
+  **影響度 L は起票しない理由にならない**(意味のないテストを排除する関門は
+  `/risk-plan` 側にあり、承認済みのリスク一覧はそこを通過済み)
 - 対象外にしたリスクは「意図的に対象外」セクションに理由付きで必ず残す
 - `Review-Status: Draft` のまま停止し、人間の確定を待つ
