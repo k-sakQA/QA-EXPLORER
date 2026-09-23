@@ -129,10 +129,13 @@ model: 'GPT-4.1'
   レビュー依頼: N件
 ```
 
-承認後の実行方法もあわせて1行で案内する。
-現状 `/explore` は `charter=` 引数を未サポートなので、当面は
-`test-charters.md` の実行順に沿って人間が観点を指定して `/explore` を回す運用になる
-(charter 駆動モードは次フェーズで実装予定)。
+承認後の実行方法もあわせて1行で案内する:
+
+```
+/explore url=<対象URL> charter=qa-knowledge/targets/<slug>/test-charters.md
+```
+
+`Review-Status` を `Approved` にしないと `/explore` 側が停止するので、その旨も伝える。
 
 ## やらないこと
 
