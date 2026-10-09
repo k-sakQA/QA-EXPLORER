@@ -24,11 +24,18 @@ config/
 # 顧客固有のテストデータを含む skill (公開しない)
 .github/skills/report-translator/
 
-# 顧客固有の Playwright config
+# 顧客固有の Playwright config (共通の playwright.config.ts 以外は除外)
+playwright.*.config.ts
 
 # reports: _template と hotel-example-site-takeyaqa-dev 以外を除外
+reports/*
+!reports/_template/
+!reports/hotel-example-site-takeyaqa-dev/
 
 # qa-knowledge/targets: _template と hotel-example-site-takeyaqa-dev 以外を除外
+qa-knowledge/targets/*
+!qa-knowledge/targets/_template/
+!qa-knowledge/targets/hotel-example-site-takeyaqa-dev/
 
 # tests/generated: hotel-* 以外を除外
 tests/generated/*
