@@ -1,5 +1,5 @@
 ---
-description: 対象URLを渡して、23観点リストに沿った自律探索テストを開始する
+description: 対象URLを渡して、28観点リストに沿った自律探索テストを開始する
 argument-hint: url=<対象URL> intent=<テスト意図> [charter=<test-charters.md のパス>]
 ---
 

@@ -10,7 +10,7 @@ qa-explorer / qa-runner / Claude Code コマンドはすべてこのファイル
 
 ```
 qa-knowledge/
-  viewpoints.md                  # 23観点リスト(基本形・読み取り専用)
+  viewpoints.md                  # 28観点リスト(基本形・読み取り専用)
   targets/<target-slug>/
     risk-input.md                # [前段/任意] リスク分析の入力(ヒアリング・資料)
     risk-register.md             # [前段/任意] リスク一覧(業務フロー単位・要人間承認)

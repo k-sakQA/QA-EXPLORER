@@ -1,5 +1,5 @@
 ---
-description: "対象URLを与えて、QA Explorer エージェントによる自律的な23観点探索を開始する"
+description: "対象URLを与えて、QA Explorer エージェントによる自律的な28観点探索を開始する"
 mode: 'agent'
 ---
 
@@ -13,7 +13,7 @@ mode: 'agent'
 - **対象URL**: ${input:url:テスト対象のURL(例: https://example.com/login)}
 - **テスト意図**: ${input:intent:このサイトで重点的に見たいことを一言で}
 - **目標カバレッジ**: ${input:coverage:目標観点カバレッジ(数字のみ。デフォルト 80):80}
-- **最大イテレーション数**: ${input:maxIter:最大イテレーション数(数字のみ。デフォルト 23):23}
+- **最大イテレーション数**: ${input:maxIter:最大イテレーション数(数字のみ。デフォルト 28):28}
 
 ## 起動手順
 
@@ -41,7 +41,7 @@ mode: 'agent'
 エージェントの「セッション終了処理」に従い、`session-log.md` の Session Summary と
 「次セッションへの申し送り」を埋めたうえで、チャットには:
 
-- 消化観点数 / 23、検出バグ数
+- 消化観点数 / 28、検出バグ数
 - 新規 Finding / Hypothesis 数
 - 次セッションへの申し送り
 - Open な Hypothesis が残っていれば明示
