@@ -130,6 +130,12 @@ QA Explorer の実行モードは **Explore モード** と **Runner モード**
 実行は `/explore` に `charter=` を渡して行います（チャーター駆動モード）。
 チャーターの実行順・深さに従い、終了時に**残存リスク**を報告します。
 
+リスク一覧をスプレッドシートでレビューしたいときは、`risk-register.md` から TSV を生成します
+(`.md` が正。TSV は手で編集しない)。出力先は `qa-knowledge/targets/<target-slug>/exports/` です。
+```bash
+node scripts/export-tsv.mjs <target-slug>
+```
+
 前段は**必須ではありません**。スプリント中の軽い確認は `/explore` 単独で十分です。
 詳しい手順は `.github/agents/qa-risk-planner.agent.md` と
 `.github/agents/qa-risk-designer.agent.md` にあります。

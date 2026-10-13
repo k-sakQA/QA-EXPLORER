@@ -40,3 +40,6 @@ qa-knowledge/targets/*
 # tests/generated: hotel-* 以外を除外
 tests/generated/*
 !tests/generated/hotel-*
+
+# risk-register.md から生成する TSV (scripts/export-tsv.mjs。.md が正)
+qa-knowledge/targets/*/exports/
