@@ -1,6 +1,6 @@
 # QA Explorer
 
-Webアプリを「23観点リスト」に沿って自律的に探索テストするQAエージェント。
+Webアプリを「28観点リスト」に沿って自律的に探索テストするQAエージェント。
 あなたは経験豊富なQAエンジニアとして、コードの正しさより「ユーザーが困る挙動を
 見つけること」を優先する。
 
@@ -15,7 +15,7 @@ Webアプリを「23観点リスト」に沿って自律的に探索テストす
 
 ## 知識ソースの優先順位
 
-1. `qa-knowledge/viewpoints.md` — 23観点リスト(読み取り専用)
+1. `qa-knowledge/viewpoints.md` — 28観点リスト(読み取り専用)
 2. `qa-knowledge/loop-rules.md` — ナレッジ蓄積ループの正準ルール(テスト実行時は必ず遵守)
 3. `qa-knowledge/targets/<target-slug>/findings.md` — 対象ごとの事実・仮説・検証計画
    同フォルダの `risk-input.md` / `risk-register.md` / `test-charters.md` は

@@ -10,7 +10,7 @@ qa-explorer / qa-runner / Claude Code コマンドはすべてこのファイル
 
 ```
 qa-knowledge/
-  viewpoints.md                  # 23観点リスト(基本形・読み取り専用)
+  viewpoints.md                  # 28観点リスト(基本形・読み取り専用)
   targets/<target-slug>/
     risk-input.md                # [前段/任意] リスク分析の入力(ヒアリング・資料)
     risk-register.md             # [前段/任意] リスク一覧(業務フロー単位・要人間承認)
@@ -56,6 +56,10 @@ reports/<target-slug>/
   coverage.md の「優先度変更履歴」に記録。
 - **Probe 実施後**: Probe Status を Done に更新し、Hypothesis の Status を
   Confirmed / Rejected に更新
+- **対象固有の前提知識** (認証の癖・環境の制約・データの作り方・操作してよい範囲 等) は、
+  エージェント個人のメモリではなく `findings.md` の「前提知識 (Context)」節に `C-NN` で書く。
+  メモリに置くと、同じ対象を扱う他のメンバーや別の環境のエージェントに届かない。
+  個人のメモリに残すのは、対象をまたぐ作業スタイルの好みだけにする
 
 ## 障害解析の鉄則 (必須) — 「最後に出たエラー」を原因と即断しない
 
@@ -75,6 +79,16 @@ reports/<target-slug>/
 4. 上記3点を`findings.md`に書き出してから結論を出す。独立した証拠が薄い場合は
    `Needs-Human: Yes`にして人間の判断を仰ぐか、「原因未特定、要再調査」と正直に書く。
    自テストコードの不備(セレクタ誤り等)である可能性を常に最初に疑う。
+
+**具体例**: 外部決済サービスの埋め込みフォーム(iframe)を含む購入テストが、3回連続で
+`Target page, context or browser has been closed` で失敗し、当初「iframe 操作時の
+ブラウザクラッシュ」という環境要因に分類した。しかし遡ると、最初の異常は
+`Test timeout of 60000ms exceeded` であり、その直前に待っていたのは**存在しないセレクタ
+(`iframe[title*="card" i]`)で永遠にマッチしない frameLocator** への3項目分の fill 待機
+(各 `.catch(() => {})` で握りつぶされ積み重なっていた)だった。ブラウザクラッシュを示す
+独立した証拠(プロセスログ等)は一切なく、「context/browser has been closed」は
+Playwright がタイムアウト後にテストを強制終了した**結果**に過ぎなかった。実際は
+テストコードのセレクタ不備が根本原因だった。
 
 ## セッション終了時 (必須)
 

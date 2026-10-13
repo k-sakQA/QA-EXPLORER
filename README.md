@@ -44,6 +44,12 @@ QA_AUTH_URL=<ログインページのURL> npm run auth
 テスト実行時の対象は `QA_BASE_URL`(未指定時は hotel-example-site)、
 認証確認パスは `QA_AUTH_CHECK_PATH` で指定します。認証不要な対象では何も設定不要です。
 
+保存した認証ファイルにはログイン済みの Cookie・トークンが入っています。テストが終わったら消してください。
+```bash
+node scripts/clear-auth.mjs            # すべて消す(--dry-run で対象だけ表示)
+sh scripts/install-auth-cleaner.sh     # macOS: ログインから8時間たったものを自動で消す
+```
+
 ### 実行コマンド
 
 Claude Code、または VS Code チャット(**Agent モード**)で以下を入力して探索を開始します。
@@ -123,6 +129,12 @@ QA Explorer の実行モードは **Explore モード** と **Runner モード**
 
 実行は `/explore` に `charter=` を渡して行います（チャーター駆動モード）。
 チャーターの実行順・深さに従い、終了時に**残存リスク**を報告します。
+
+リスク一覧をスプレッドシートでレビューしたいときは、`risk-register.md` から TSV を生成します
+(`.md` が正。TSV は手で編集しない)。出力先は `qa-knowledge/targets/<target-slug>/exports/` です。
+```bash
+node scripts/export-tsv.mjs <target-slug>
+```
 
 前段は**必須ではありません**。スプリント中の軽い確認は `/explore` 単独で十分です。
 詳しい手順は `.github/agents/qa-risk-planner.agent.md` と

@@ -58,6 +58,9 @@ async function waitForEnter(message: string): Promise<void> {
 
   await waitForEnter('>> Enter を押すと認証情報を保存します... ');
 
+  // 作成日時をログイン時刻にそろえる (scripts/clear-auth.mjs が作成日時で期限切れを判定する)
+  fs.rmSync(AUTH_FILE, { force: true });
+
   // storageState を保存 (indexedDB: true で Firebase Auth のリフレッシュトークンも含む)
   try {
     await (context.storageState as any)({ path: AUTH_FILE, indexedDB: true });
