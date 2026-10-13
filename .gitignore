@@ -14,6 +14,10 @@ qa-explorer-report-*.html
 # Playwright MCP logs
 .playwright-mcp/
 
+# 探索中の使い捨てファイルと実行ごとのレポート (scripts/clean-artifacts.mjs で定期削除)
+.explore-scratch/
+test-runs/
+
 # ローカル設定 (APIキー・Slack等を含むため公開しない)
 config/
 

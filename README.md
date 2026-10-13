@@ -50,6 +50,12 @@ node scripts/clear-auth.mjs            # すべて消す(--dry-run で対象だ�
 sh scripts/install-auth-cleaner.sh     # macOS: ログインから8時間たったものを自動で消す
 ```
 
+Playwright MCP のログ(`.playwright-mcp/`)や探索中の使い捨てファイル(`.explore-scratch/`)も、実行のたびにたまります。
+```bash
+node scripts/clean-artifacts.mjs           # 古いものを消す(--dry-run で対象だけ表示)
+sh scripts/install-artifact-cleaner.sh     # macOS: 毎日 12:00 に自動で消す
+```
+
 ### 実行コマンド
 
 Claude Code、または VS Code チャット(**Agent モード**)で以下を入力して探索を開始します。
