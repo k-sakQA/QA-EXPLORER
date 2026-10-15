@@ -8,6 +8,7 @@
   },
   "scripts": {
     "auth": "npx tsx scripts/save-auth.ts",
+    "setup:check": "node scripts/check-setup.mjs",
     "test": "npx playwright test",
     "test:headed": "npx playwright test --headed"
   },

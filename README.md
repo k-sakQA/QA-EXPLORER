@@ -34,6 +34,10 @@ npm install
 npx playwright install
 ```
 
+Claude Code でこのリポジトリを開くと、セッション開始時と `git pull` などの後に依存関係の状態を
+自動で確認し(`.claude/settings.json` の hook → `scripts/check-setup.mjs`)、不足があれば
+必要なインストールコマンドを提案します。手動で確認する場合は `npm run setup:check` を実行します。
+
 ### 認証情報の設定（テスト対象にログイン認証などが必要な場合）
 
 以下のコマンドを実行すると、ブラウザで手動ログインを行ってセッションをローカルPC上に保存できます。
