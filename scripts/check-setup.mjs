@@ -6,7 +6,7 @@
  *   node scripts/check-setup.mjs --hook   … Claude Code の hook 用。問題があるときだけ JSON を出力
  *
  * 確認内容:
- *   1. Node.js のバージョン (Playwright の要件 >=18)
+ *   1. Node.js のバージョン (Playwright の要件 >=18。既知の脆弱性がある版は警告のみ)
  *   2. package.json と package-lock.json の食い違い (誰かが依存を足して lock を更新し忘れた等)
  *   3. node_modules が package-lock.json どおりに入っているか (clone 直後 / pull で lock が変わった後)
  *   4. インストール済み Playwright の版に対応する Chromium がダウンロード済みか
@@ -42,6 +42,19 @@ function readHookInput() {
 
 const GIT_UPDATE = /\bgit\s+(pull|merge|rebase|checkout|switch|reset|stash\s+pop)\b/;
 
+/**
+ * 系列ごとの、既知の脆弱性が修正済みの最低バージョン (2026-10-21 のセキュリティリリース)
+ * https://nodejs.org/ja/blog/vulnerability/october-2026-security-releases
+ * 表に無い系列 (奇数版・EOL) は修正版が出ないので判定しない。新しいリリースが出たら更新する
+ */
+const NODE_SECURE_MIN = { 22: '22.23.4', 24: '24.22.1', 26: '26.12.1' };
+
+const versionLess = (a, b) => {
+  const [x, y] = [a, b].map((v) => v.split('.').map(Number));
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
+  return false;
+};
+
 function playwrightCacheDir() {
   const env = process.env.PLAYWRIGHT_BROWSERS_PATH;
   if (env === '0') return path.join(ROOT, 'node_modules', 'playwright-core', '.local-browsers');
@@ -74,6 +87,12 @@ function check() {
   if (major < 18) {
     problems.push(`Node.js ${process.versions.node} は古すぎます (Playwright は 18 以上が必要)`);
     return { problems, warnings, commands: ['Node.js 18 以上 (LTS 推奨) を入れ直す'] };
+  }
+  // テスト自体は動くので problems にはしない (exit 1 で作業を止めるほどではなく、更新は人が判断する)
+  const secureMin = NODE_SECURE_MIN[major];
+  if (secureMin && versionLess(process.versions.node, secureMin)) {
+    warnings.push(`Node.js ${process.versions.node} には既知の脆弱性があります (${major}.x の修正版は ${secureMin})`);
+    commands.push(`Node.js を ${secureMin} 以上に更新する (https://nodejs.org/ja/download)`);
   }
 
   const pkg = readJson(path.join(ROOT, 'package.json')) ?? {};
