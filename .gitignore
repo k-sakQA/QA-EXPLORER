@@ -31,6 +31,14 @@ config/
 # 顧客固有の Playwright config (共通の playwright.config.ts 以外は除外)
 playwright.*.config.ts
 
+# Android: 未リリースのアプリ本体・顧客固有の config・実行ごとの出力・端末設定の記録
+*.apk
+*.aab
+mobilewright.*.config.ts
+test-results-android/
+mobilewright-report/
+.android-state/
+
 # reports: _template と hotel-example-site-takeyaqa-dev 以外を除外
 reports/*
 !reports/_template/

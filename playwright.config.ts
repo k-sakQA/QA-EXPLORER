@@ -6,6 +6,8 @@ const AUTH_FILE = path.resolve(__dirname, 'storage', process.env.QA_AUTH_FILE ??
 
 export default defineConfig({
   testDir: './tests/generated',
+  /* Android の spec は Mobilewright で実行する(npm run test:android)。こちらで拾うと端末なしで落ちる */
+  testIgnore: '**/android/**',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

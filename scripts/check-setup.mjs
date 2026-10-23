@@ -11,6 +11,12 @@
  *   3. node_modules が package-lock.json どおりに入っているか (clone 直後 / pull で lock が変わった後)
  *   4. インストール済み Playwright の版に対応する Chromium がダウンロード済みか
  *   5. Playwright MCP が使う Google Chrome があるか (警告のみ)
+ *   6. Android 版: .mcp.json の mobile-mcp でテレメトリが止まっているか
+ *   7. Android 版: Node.js が Mobilewright の要件 (22.12 以上) を満たすか (警告のみ。Web 版は動く)
+ *   8. Android 版: 前回のセッションで戻していない端末設定の記録 (.android-state/) が残っていないか (警告のみ)
+ *
+ * Android 版の JDK・Android SDK・端末の確認はここではしない (npm run android:doctor に任せる)。
+ * Web 版だけを使う人に、毎回 Android の不足を知らせないため。
  *
  * hook として .claude/settings.json の SessionStart と PostToolUse(Bash: git pull 等の後) から呼ばれる。
  */
@@ -161,6 +167,33 @@ function check() {
   if (!chromeInstalled()) {
     warnings.push('Google Chrome が見つかりません。/explore で使う Playwright MCP のブラウザ操作が失敗します');
     commands.push('Google Chrome を通常の方法でインストールする (または npx playwright install chrome)');
+  }
+
+  // 6. mobile-mcp のテレメトリ停止 (未リリースの顧客アプリを扱うので必須。docs/android-support-plan.md)
+  const mobileMcp = readJson(path.join(ROOT, '.mcp.json'))?.mcpServers?.['mobile-mcp'];
+  if (mobileMcp) {
+    const missing = ['MOBILEMCP_DISABLE_TELEMETRY', 'MOBILEWRIGHT_DISABLE_TELEMETRY'].filter((k) => !mobileMcp.env?.[k]);
+    if (missing.length) {
+      problems.push(`.mcp.json の mobile-mcp でテレメトリが止まっていません (env に ${missing.join(' / ')} がありません)`);
+      commands.push(`.mcp.json の mcpServers["mobile-mcp"].env に ${missing.map((k) => `"${k}": "1"`).join(', ')} を戻す`);
+    }
+  }
+
+  // 7. Mobilewright の Node.js 要件
+  if (versionLess(process.versions.node, '22.12.0')) {
+    warnings.push(`Node.js ${process.versions.node} では Android 版 (Mobilewright) が動きません (22.12 以上が必要)。Web 版はそのまま動きます`);
+    commands.push('Android 版を使うなら Node.js 22.12 以上 (LTS 推奨) に更新する');
+  }
+
+  // 8. 戻していない端末設定 (scripts/android-device-state.mjs の記録が残っている = 前回のセッションが途中で終わった)
+  const stateDir = path.join(ROOT, '.android-state');
+  if (fs.existsSync(stateDir)) {
+    for (const f of fs.readdirSync(stateDir).filter((n) => n.endsWith('.json'))) {
+      const s = readJson(path.join(stateDir, f));
+      if (!s?.serial) continue;
+      warnings.push(`端末 ${s.serial} の設定が ${s.savedAt} の記録から戻っていません (前回のセッションが途中で終わった可能性)`);
+      commands.push(`端末 ${s.serial} をつないで node scripts/android-device-state.mjs end ${s.serial}`);
+    }
   }
 
   return { problems, warnings, commands };

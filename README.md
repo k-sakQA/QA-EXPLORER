@@ -105,6 +105,16 @@ Claude Code、または VS Code チャット(**Agent モード**)で以下を入
 `cases` を省略すると `qa-knowledge/targets/<target-slug>/test-cases.md` を使います。
 `/run-cases` は `qa-runner` サブエージェントを起動します。
 
+**Android ネイティブアプリの自律探索(Claude Code のみ):**
+```
+/explore-android package=<パッケージ名> intent=<意図> [device=<端末ID>]
+# 例: /explore-android package=com.example.shop intent=カートから購入確定までを中心に
+```
+PC に USB でつないだ Android 端末のアプリを、Web 版と同じ28観点・同じナレッジ蓄積ループで探索します。
+画面の読み取りと操作は mobile-mcp、spec の実行は Mobilewright(`npm run test:android -- <target-slug>`)です。
+JDK・Android SDK・端末の準備が別に要ります。導入手順・使い方・運用ルールは
+[docs/android-support-plan.md](docs/android-support-plan.md) を参照してください。
+
 ### Copilot Chat での実行コマンド
 
 VS Code のチャットを **Agent モード** に切り替え、上記と同じ `/explore` / `/run-cases`
@@ -192,6 +202,7 @@ qa-explorer/
 │  ├─ risk-plan.md                      # /risk-plan で起動 (前段・2フェーズ)
 │  ├─ risk-design.md                    # /risk-design で起動 (前段)
 │  ├─ explore.md                        # /explore で起動 (Claude Code)
+│  ├─ explore-android.md                # /explore-android で起動 (Claude Code・Android)
 │  ├─ run-cases.md                      # /run-cases で起動 (Claude Code)
 │  └─ qa-explorer-report.md             # /qa-explorer-report で起動
 ├─ .github/
@@ -223,7 +234,14 @@ qa-explorer/
 │     ├─ coverage.md                    # 観点消化状況
 │     ├─ session-log.md                 # セッションの経緯
 │     └─ bugs/                          # GitHub Issue 形式のバグレポート
-└─ tests/generated/                     # エージェントが生成する Playwright spec
+├─ tests/generated/                     # エージェントが生成する Playwright spec
+│  └─ android/<target-slug>/            # Android 版の Mobilewright spec (対象ごと)
+├─ .claude/agents/qa-explorer-android.md # Android 版の探索手順 (Web 版との差分)
+├─ mobilewright.config.ts               # Android 版の spec の実行設定
+└─ scripts/
+   ├─ run-android.mjs                   # Mobilewright を呼ぶ唯一の入口 (npm run test:android など)
+   ├─ android-device-state.mjs          # 端末設定の記録と復元
+   └─ guard-android.mjs                 # Android まわりの操作を止める・承認を求めるフック
 ```
 
 エージェントの手順は `.github/agents/*.agent.md`、記録ルールは

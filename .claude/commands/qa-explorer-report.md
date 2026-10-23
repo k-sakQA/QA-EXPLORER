@@ -24,7 +24,9 @@ reports/
     bugs/
       YYYY-MM-DD-viewpoint-NN-<slug>.md
 tests/generated/
-  *.spec.ts                  # Playwright spec
+  *.spec.ts                  # Playwright spec (Web)
+  android/<target-slug>/
+    *.android.spec.ts        # Mobilewright spec (Android ネイティブアプリ。対象ごとにフォルダを分けている)
 ```
 
 `<target-slug>` は対象URLのホスト名から生成された短い識別子（例: `hotel-example-site-takeyaqa-dev`)。複数の対象が並ぶこともある。
@@ -52,7 +54,7 @@ target-slug ごとに、以下を読み取る。**ファイルが無い場合は
 | `reports/<slug>/manual-tests.md` | 手動テスト候補(MT-ID, 優先度, タイトル, ファイル内アンカー)。ファイルが無ければ「起票なし」と表示 |
 | `reports/<slug>/coverage.md` | 観点表(No, 観点, 優先度, 状態, 備考) |
 | `reports/<slug>/session-log.md` | Iteration ごとのテスト記録、次セッションへの申し送り |
-| `tests/generated/*.spec.ts` | spec のコメント(/** ~ */)から「狙うバグ」「手順」を補完 |
+| `tests/generated/*.spec.ts`(target-slug が `android-` で始まる対象は `tests/generated/android/<slug>/*.android.spec.ts`) | spec のコメント(/** ~ */)から「狙うバグ」「手順」を補完 |
 
 ### Step 3: 「実行したテストの内容」をまとめる
 

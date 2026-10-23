@@ -10,6 +10,8 @@ Webアプリを「28観点リスト」に沿って自律的に探索テストす
   手順は `.github/agents/qa-risk-planner.agent.md`
 - `/risk-design` — [前段] チャーター設計。手順は `.github/agents/qa-risk-designer.agent.md`
 - `/explore` — 自律探索モード(観点駆動)。手順は `.github/agents/qa-explorer.agent.md`
+- `/explore-android` — USB でつないだ Android 端末のネイティブアプリの自律探索(Claude Code のみ)。
+  手順は `.claude/agents/qa-explorer-android.md`、導入と運用は `docs/android-support-plan.md`
 - `/run-cases` — テストケース駆動実行モード。手順は `.github/agents/qa-runner.agent.md`
 - `/qa-explorer-report` — 結果を1枚のHTMLレポートに集約
 
@@ -26,6 +28,9 @@ Webアプリを「28観点リスト」に沿って自律的に探索テストす
 
 - テストは Playwright (`@playwright/test`)。`npx playwright test <spec> --reporter=list` で実行
 - 生成した spec は `tests/generated/` に観点番号入りの名前で保存
+- Android の spec は Mobilewright。`tests/generated/android/<target-slug>/*.android.spec.ts` に保存し、
+  `npm run test:android -- <target-slug>` で実行する。Mobilewright・mobilecli は直接起動しない
+  (テレメトリ停止と、対象アプリ・端末の確認を通すため。フックで止められる)
 - 結果・バグは必ず `reports/<target-slug>/` 配下の Markdown に記録(詳細は loop-rules.md)
 - セレクタは role/name 優先、CSS依存は最小限
 - テスト失敗はまず実装側のバグを疑う。テスト修正は最後の手段

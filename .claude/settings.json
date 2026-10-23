@@ -1,5 +1,29 @@
 {
+  "permissions": {
+    "deny": [
+      "mcp__mobile-mcp__mobile_login_to_cloud_provider",
+      "mcp__mobile-mcp__mobile_list_remote_devices",
+      "mcp__mobile-mcp__mobile_allocate_remote_device",
+      "mcp__mobile-mcp__mobile_release_remote_device"
+    ],
+    "ask": [
+      "mcp__mobile-mcp__mobile_install_app",
+      "mcp__mobile-mcp__mobile_uninstall_app"
+    ]
+  },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__mobile-mcp__mobile_batch_commands",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/guard-android.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "startup|resume|clear",

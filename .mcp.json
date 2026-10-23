@@ -3,6 +3,14 @@
     "playwright": {
       "command": "npx",
       "args": ["@playwright/mcp@0.0.83", "--headless"]
+    },
+    "mobile-mcp": {
+      "command": "node",
+      "args": ["node_modules/@mobilenext/mobile-mcp/lib/index.js"],
+      "env": {
+        "MOBILEMCP_DISABLE_TELEMETRY": "1",
+        "MOBILEWRIGHT_DISABLE_TELEMETRY": "1"
+      }
     }
   }
 }

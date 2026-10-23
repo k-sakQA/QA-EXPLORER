@@ -10,14 +10,21 @@
     "auth": "npx tsx scripts/save-auth.ts",
     "setup:check": "node scripts/check-setup.mjs",
     "test": "npx playwright test",
-    "test:headed": "npx playwright test --headed"
+    "test:headed": "npx playwright test --headed",
+    "test:android": "node scripts/run-android.mjs test",
+    "android:doctor": "node scripts/run-android.mjs doctor",
+    "android:inspect": "node scripts/run-android.mjs inspect",
+    "android:codegen": "node scripts/run-android.mjs codegen"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@mobilenext/mobile-mcp": "1.0.12",
+    "@mobilewright/test": "0.0.67",
     "@playwright/test": "^1.60.0",
+    "mobilewright": "0.0.67",
     "tsx": "^4.23.15"
   }
 }
