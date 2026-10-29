@@ -43,3 +43,10 @@
 - Hypothesis: `H-20260422-02` (numberフィールドのmin属性未設定)
 - Related bugs / findings: F-20260422-04 (宿泊数0も同様)
 - Evidence: `test-results/`
+
+## 回帰確認 (2026-10-21, Session #7)
+
+- 現行版では**再現しない(修正済みと判断)**。0 を入力すると「1以上の値を入力してください。」で弾かれる。min/max がプランデータ(plan_data.json)から設定されるようになった(C-02)
+- 改ざん(min 属性の除去)による経路は、ユーザー指示により今回は確認していない
+- 対象テストケース: `tests/generated/viewpoint-02-06-09-23-regression-s7.spec.ts`
+- Finding: F-20261021-11

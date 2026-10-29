@@ -40,22 +40,6 @@ ID形式: `F-YYYYMMDD-NN` / `H-YYYYMMDD-NN` / `P-YYYYMMDD-NN` (同日内の通�
 - Bug Link: -
 - Related: F-20260422-02
 
-### F-20260422-04
-- Date: 2026-04-22
-- Source: Bug
-- Viewpoint: 23 禁則
-- Fact: 宿泊数(term)に0を入力しても確認画面に遷移できてしまう。input[type=number]のmin属性がnull。
-- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-04-22-viewpoint-23-term-zero-allowed.md
-- Related: F-20260422-05, H-20260422-02
-
-### F-20260422-05
-- Date: 2026-04-22
-- Source: Bug
-- Viewpoint: 23 禁則
-- Fact: 人数(head-count)に0を入力しても確認画面に遷移できてしまう。input[type=number]のmin属性がnull。
-- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-04-22-viewpoint-23-headcount-zero-allowed.md
-- Related: F-20260422-04, H-20260422-02
-
 ### F-20260422-06
 - Date: 2026-04-22
 - Source: Observation
@@ -95,14 +79,6 @@ ID形式: `F-YYYYMMDD-NN` / `H-YYYYMMDD-NN` / `P-YYYYMMDD-NN` (同日内の通�
 - Fact: XSS脆弱性なし。scriptタグ・imgタグ等は適切にHTMLエスケープされ、テキストとして表示される。SQLインジェクション風文字列、サロゲートペア(絵文字)、制御文字も問題なく処理される。
 - Bug Link: -
 - Related: -
-
-### F-20260422-11
-- Date: 2026-04-22
-- Source: Hypothesis-Rejected
-- Viewpoint: 15 変更・反映
-- Fact: 料金計算は仕様通り。「お一人様1泊7,000円」は人数×7,000円の意味。テスト時に人数変更後の料金更新を待っていなかったため誤検出。2名1泊朝食付きで16,000円は正しい(14,000+2,000)。
-- Bug Link: - (削除)
-- Related: H-20260422-03 (Rejected)
 
 ### F-20260422-12
 - Date: 2026-04-22
@@ -278,40 +254,7 @@ ID形式: `F-YYYYMMDD-NN` / `H-YYYYMMDD-NN` / `P-YYYYMMDD-NN` (同日内の通�
 
 ---
 
-## Session 5 Hypotheses (2026-04-24)
-
-### H-20260424-01
-- Born from: F-20260424-01, F-20260424-02, F-20260424-03, F-20260424-04
-- Statement: このサイトのバリデーションはHTML5属性(required/min/max/type)とクライアントサイドJSに完全依存しており、サーバ側バリデーションが存在しない。そのため、DevToolsやJSでHTML属性を改ざんすると、あらゆる不正値（0円料金、0泊、100泊、空白氏名）が確認画面を通過する。フォームデータがGETパラメータとして送信される構造（F-20260422-13）と合わせると、URL直打ちによる不正予約も理論上可能。
-- Status: Confirmed
-- Probes planned: P-20260424-01
-- Notes: Hidden料金改ざん(0円)、宿泊数0/人数0、宿泊数100、全角スペース氏名、全てが確認画面を通過。サーバ側にガードレールが一切ない。
-
-### P-20260424-01
-- Verifies: H-20260424-01
-- Target viewpoint: 08 数値(異常値) / 23 禁則 【追加検証】
-- Plan:
-  1. confirm.htmlにGETパラメータを直接構築してアクセスし、不正データの予約成立を確認
-  2. required属性をJS除去して全フィールド空で送信
-  3. plan-id-hiddenを存在しないIDに変更して送信
-- Status: Done
-- Result:
-  1. confirm.htmlはGETパラメータ直打ちでは機能しない。JS状態管理で遷移するため、URLに直接パラメータを付けてアクセスしても空のページまたはリダイレクトになる。
-  2. required属性をJS除去して全フィールド空で送信 → JS側の追加バリデーションにより弾かれた。
-  3. 0円料金のURLは直接アクセスしても予約ボタンが表示されなかった。
-  - **結論**: H-20260424-01を部分修正。サーバ側バリデーションは不在だが、confirm.htmlへのURL直打ちバイパスは不可。ただしreserve.htmlでのJS属性改ざんは引き続き有効。
-
----
-
 ## Session 6 Findings (2026-04-24 ナレッジ活用探索)
-
-### F-20260424-12
-- Date: 2026-04-24
-- Source: Probe-Result
-- Viewpoint: 08 数値(異常値) / 23 禁則
-- Fact: P-20260424-01 の結果。confirm.html は JS 状態管理で遷移しており、GET パラメータの直打ちでは予約成立しない。ただし reserve.html でのクライアントサイド改ざんは引き続き全て有効。
-- Bug Link: -
-- Related: H-20260424-01, P-20260424-01
 
 ### F-20260424-13
 - Date: 2026-04-24
@@ -381,6 +324,152 @@ ID形式: `F-YYYYMMDD-NN` / `H-YYYYMMDD-NN` / `P-YYYYMMDD-NN` (同日内の通�
   3. plan-id=1 の reserve.html の JS ソースを他プランと比較
 - Status: Planned
 - Result: (次セッションで実施)
+
+---
+
+## 前提知識 (Context)
+
+### C-01
+- Added: 2026-10-21 (S7)
+- Content: バックエンドが無い練習サイト。予約データは submit 時に `sessionStorage[<10桁の取引ID>]` へ保存し、取引IDは `transaction` Cookie(path=/ja、セッションCookie)で confirm.html に渡す。confirm.html は読み込んだ時点で Cookie と sessionStorage の両方を削除する(1回限り消費)。フォームの action は GET だが、confirm.html は `history.replaceState` でクエリを消す
+
+### C-02
+- Added: 2026-10-21 (S7)
+- Content: 2026-10 時点の実装では term/head-count の min/max を `/data/ja/plan_data.json` から設定している。2026-04 の Finding(F-20260422-04/05/06 の「min 属性が null」など)は旧実装の観察である可能性が高く、再現確認なしに前提にしない
+
+### C-03
+- Added: 2026-10-21 (S7)
+- Content: テスト時の約束事。(1) ユーザー指示により、セキュリティ攻撃にあたる操作(hidden 値やHTML属性の改ざん、認証Cookieの偽造、XSS文字列の投入)はしない。(2) 外部の計測スクリプト(plausible.io)は `tests/generated/support/hotel-reserve.ts` の `blockAnalytics` で遮断する。(3) 確認画面の見出しは静的HTMLなので、confirm.js の描画完了は `#total-bill` に「合計」が入るまで待って判定する(S7 で見出し待ちによる偽陽性を経験)
+
+---
+
+## Session 7 Findings (2026-10-21 広く浅く・観点24〜28)
+
+### F-20261021-01
+- Date: 2026-10-21
+- Source: Observation
+- Viewpoint: 26 削除と参照整合
+- Fact: 確認画面でリロード(F5)すると、取引データが消費済みのため説明なしにトップページ(index.html)へ遷移し、入力した予約内容がすべて失われる。消し残しは無く、削除済みの取引で confirm.html を開いても内部エラーは出ずトップへ誘導される(参照整合そのものは正常)。ブラウザバック→再送信では新しい取引で正しく確認画面が出る
+- Evidence: reports/hotel-example-site-takeyaqa-dev/evidence/2026-10-21-v26-confirm-reload-to-top.png / tests/generated/viewpoint-26-transaction-consume.spec.ts
+- Needs-Human: Yes — 確認画面のリロードで入力が消えてトップへ戻るのは、二重予約を防ぐための意図した仕様か(仕様なら、せめて理由の表示が要るか)
+- Bug Link: -
+- Related: C-01
+
+### F-20261021-02
+- Date: 2026-10-21
+- Source: Observation
+- Viewpoint: 28 操作可能ユーザー(認可)
+- Fact: 未ログインでは、プレミアム限定(plan-id=1)・会員限定(2,3)・存在しないプラン(999)を直リンクで開いてもトップへ誘導され、一覧にもリンクが出ない(6/6 パス)。ただし判定は読み込み時のブラウザ側だけ(`canDisplayPlan`)で、送信時には会員チェックが無い。ログイン中にフォームを開いてから別タブでログアウトした場合は通る見込み → MT-20261021-01 で人間が確認
+- Bug Link: -
+- Related: C-01
+
+### F-20261021-03
+- Date: 2026-10-21
+- Source: Bug
+- Viewpoint: 24 生成と一意性
+- Fact: 「予約内容を確認する」をダブルクリックすると取引データが2件作られ、確認画面は Cookie の最後の1件だけを消費する。使われなかった1件(氏名・連絡先入り)が sessionStorage に残る。再現率 5/5。入力エラー時には取引データは作られない(正常)
+- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-10-21-viewpoint-24-orphan-transaction-on-double-click.md
+- Related: F-20260424-08, C-01
+
+### F-20261021-04
+- Date: 2026-10-21
+- Source: Bug
+- Viewpoint: 24 生成と一意性 / 19 登録と参照
+- Fact: F-20260422-20(完了ダイアログを閉じた後に再度予約できる)は現行版でも再現。ただし予約URLを直接開いた場合のみ。プラン一覧から新規タブで開いた場合は、ダイアログを閉じると `window.close()` でタブが閉じるため再現しない
+- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-04-22-viewpoint-19-double-booking.md (回帰確認を追記)
+- Related: F-20260422-20
+
+### F-20261021-05
+- Date: 2026-10-21
+- Source: Bug
+- Viewpoint: 25 更新と競合
+- Fact: タブAの確認画面の読み込み中にタブBで送信すると、タブAはトップページに飛ばされ予約内容が失われる(3/3 再現)。取引IDを渡す Cookie がタブ間で共有されて後勝ちになるため。順番に操作した場合は両タブとも正常
+- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-10-21-viewpoint-25-two-tabs-reservation-lost.md
+- Related: F-20261021-01, F-20261021-03, H-20261021-01, C-01
+
+### F-20261021-06
+- Date: 2026-10-21
+- Source: Probe-Result
+- Viewpoint: 13 切替えとデータ保持
+- Fact: 確認画面 → 戻る → 進む と操作すると、Playwright の Chromium では確認画面が再実行され、トップページに飛ばされる。ただしこの環境では「戻る/進む」が bfcache から復元されていない(pageshow.persisted=false)。サイトは Cache-Control: max-age=600 で no-store ではないため、普段使いの Chrome/Safari では画面が bfcache から復元され、結果が変わる見込み
+- Needs-Human: Yes — 普段使いのブラウザで「確認画面→戻る→進む」と「確認画面→戻る」(予約フォームの入力が残るか)を確かめてほしい(MT-20261021-02)。過去の「戻ると入力が消える」系のバグ(F-20260422-01/07, F-20260424-05)も同じく Playwright 環境だけで起きている可能性がある
+- Bug Link: -
+- Related: H-20261021-01, P-20261021-01, F-20260422-01, F-20260422-07, F-20260424-05
+
+### F-20261021-07
+- Date: 2026-10-21
+- Source: Bug
+- Viewpoint: 13 切替えとデータ保持 / 24 生成と一意性
+- Fact: 確認画面の読み込みが中断された後に再送信すると、1回目の取引データ(氏名入り)が sessionStorage に残る。F-20261021-03 と同じ原因の別経路
+- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-10-21-viewpoint-24-orphan-transaction-on-double-click.md (別の再現経路として追記)
+- Related: F-20261021-03, H-20261021-01, P-20261021-01
+
+### F-20261021-08
+- Date: 2026-10-21
+- Source: Bug
+- Viewpoint: 27 操作可能期間
+- Fact: 受付期間の判定は「90日以内」(基準 2026-10-22 で 2027/01/20 可、01/21 不可)だが、注記とエラーは「3ヶ月以内」。ちょうど3ヶ月後の 2027/01/22 を入れると「3ヶ月以内の日付を入力してください。」で弾かれる。F-20260424-17(+91日可・+92日不可)とも食い違う
+- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-10-21-viewpoint-27-three-months-vs-90-days.md
+- Related: F-20260424-17, H-20261021-02
+
+### F-20261021-09
+- Date: 2026-10-21
+- Source: Observation
+- Viewpoint: 27 操作可能期間
+- Fact: 宿泊日の「翌日以降」は端末のタイムゾーンで判定される。ハワイ時間の端末(日本時間 10/22 10:00 = 現地 10/21 15:00)からは、日本では当日の 2026/10/22 を予約できる(初期値もその日になる)。日本の端末でフォームを開いたまま日付が変わった場合は、当日になった初期値が「翌日以降」のエラーで正しく弾かれる
+- Evidence: reports/hotel-example-site-takeyaqa-dev/evidence/2026-10-21-v27-honolulu-same-day-accepted.png
+- Needs-Human: Yes — 「翌日以降」の基準はホテルの所在地(日本時間)か、利用者の端末の日付か
+- Bug Link: -
+- Related: H-20261021-02
+
+### F-20261021-10
+- Date: 2026-10-21
+- Source: Bug
+- Viewpoint: 23 禁則(値)
+- Fact: 実在しない宿泊日が別の日付に読み替えられて受け付けられる(3/3): 2026/11/31→12/1、2026/13/01→2027/1/1、2026/11/00→10/31。書式違い(99/99/99)は弾かれる(F-20260424-09)ので、すり抜けるのは「書式は正しいが実在しない日付」だけ
+- Bug Link: reports/hotel-example-site-takeyaqa-dev/bugs/2026-10-21-viewpoint-23-nonexistent-date-rolled-over.md
+- Related: H-20261021-02, P-20261021-02, F-20260424-09
+
+### F-20261021-11
+- Date: 2026-10-21
+- Source: Observation
+- Viewpoint: 02 / 06 / 09 / 23(回帰確認)
+- Fact: 2026-04 の既知バグを改ざんなしの経路で回帰確認。**未修正**: 全角スペースだけの氏名が通る(F-20260422-09 / F-20260424-04)、氏名1000文字で 414 URI Too Long(F-20260422-13)、完了後の再予約(F-20260422-20、直接開いた場合のみ。F-20261021-04)。**修正済み**: 宿泊数0・人数0は「1以上の値を入力してください。」で弾かれる(F-20260422-04/05)、氏名未入力のエラーは日本語で欄のそばに出る(F-20260422-02)。戻る操作での入力消失系(F-20260422-01/07, F-20260424-05)は Playwright で bfcache が効かないため判定保留(MT-20261021-02)
+- Bug Link: 各バグレポートに「回帰確認 (2026-10-21)」を追記
+- Related: C-02, F-20261021-06
+
+---
+
+## Session 7 Hypotheses (2026-10-21)
+
+### H-20261021-01
+- Born from: F-20261021-01, F-20261021-03, F-20261021-05
+- Statement: 確認画面への受け渡しが「Cookie 1本(タブ間共有)+ 読み込み時に即削除」の1回限り方式なので、送信と確認画面の表示が1対1にならない操作(リロード、連打、並行タブ、戻る/進む)では、予約データが失われるか、使われないまま残る
+- Status: Confirmed
+- Probes planned: P-20261021-01
+- Notes: 原因領域(状態管理)が共通。P-20261021-01 で「読み込み中断→再送信」でもデータが残ることを確認(F-20261021-07)。「戻る→進む」の消失は Playwright 環境では起きるが、bfcache の差があるので実機確認待ち(F-20261021-06 / MT-20261021-02)
+
+### P-20261021-01
+- Verifies: H-20261021-01
+- Target viewpoint: 13 切替えとデータ保持
+- Plan:
+  1. 確認画面 → ブラウザバック → ブラウザの「進む」で確認画面に戻ったとき、予約内容が表示されるか
+  2. 送信直後、確認画面の表示前にブラウザバックしたとき、予約フォームの入力と取引データがどうなるか
+- Status: Done
+- Result: (1) Playwright ではトップへ飛ばされ予約内容が消える。ただし bfcache が効かない環境のため、実機確認待ち(F-20261021-06)。(2) は「確認画面の読み込みを中断→再送信」として実施。使われない取引データが残る(F-20261021-07)。いずれも仮説どおり → H-20261021-01 Confirmed
+
+---
+
+## Archived Summary
+
+- F-20260422-04: 0泊が通る → S7回帰で修正済み(F-20261021-11) → archived
+- F-20260422-05: 0人が通る → S7回帰で修正済み(F-20261021-11) → archived
+- F-20260422-11: 料金計算の誤検出(H-20260422-03 Rejected) → archived
+- H-20260424-01: バリデーションはクライアントのみ・サーバ側なし → Confirmed → archived
+- P-20260424-01: confirm.html への GET 直打ちでは予約不成立 → Done → archived
+- F-20260424-12: P-20260424-01 の結果 → archived
+- H-20261021-02: 日付を Date のローカル演算任せ → Confirmed(バグ F-20261021-08/10 起票済み) → archived
+- P-20261021-02: 実在しない日付の読み替えを確認 → Done → archived
 
 ---
 

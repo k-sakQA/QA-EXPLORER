@@ -43,3 +43,9 @@
 - Hypothesis: -
 - Related bugs / findings: H-20260422-01 (バリデーション実装の甘さ)
 - Evidence: `test-results/`
+
+## 回帰確認 (2026-10-21, Session #7)
+
+- 現行版でも**再現する(未修正)**
+- 対象テストケース: `tests/generated/viewpoint-02-06-09-23-regression-s7.spec.ts`
+- Finding: F-20261021-11

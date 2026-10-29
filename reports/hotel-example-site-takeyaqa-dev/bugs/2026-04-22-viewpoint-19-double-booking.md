@@ -64,3 +64,13 @@ High - 実運用環境では二重課金や予約重複による業務混乱が�
 ## 関連バグ
 
 - F-20260422-21: 予約番号・確認コードが発行されない（予約の一意性確認が困難）
+
+## 回帰確認 (2026-10-21, Session #7)
+
+- 現行版でも再現する。ただし再現条件が絞られた:
+  - 予約URL(`/ja/reserve.html?plan-id=0`)を**直接開いた**場合: 完了ダイアログを閉じても画面が残り、「この内容で予約する」を再度押すと完了ダイアログがまた出る(再現)
+  - **プラン一覧から新規タブで開いた**場合: ダイアログを閉じると confirm.js の `window.close()` でタブが閉じるので、再現しない
+- ブックマークや共有URLから直接予約フォームに来た利用者だけが影響を受ける
+- Evidence: `reports/hotel-example-site-takeyaqa-dev/evidence/2026-10-21-v24-double-booking-direct-entry.png`
+- 対象テストケース: `tests/generated/viewpoint-24-transaction-create.spec.ts`(予約URLを直接開いて予約した場合も…)
+- Finding: F-20261021-04
