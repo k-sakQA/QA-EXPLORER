@@ -66,7 +66,7 @@ spec の置き場所 `tests/generated/android/<target-slug>/` も無ければ作
 1. `mobile_launch_app` で対象アプリを起動し、`mobile_get_foreground_app` で前面が対象アプリになったことを確かめる
 2. `mobile_list_elements_on_screen` で画面の要素(文言・種類・位置)を読む。必要なら `mobile_take_screenshot` で見た目も見る
 3. 画面に**個人の端末らしさ**(個人の通知・アカウント名・私的なアプリ)が見えたら、探索を始めずに止まって人に確認する。
-   専用のテスト端末で動かす決まりのため(docs/android-support-plan.md §2)
+   端末は今回のテスト専用とは限らず、他の開発中アプリも入っている(下の「対象アプリ以外の画面を撮らない」)
 4. 新規対象なら `session-log.md` の "Initial Snapshot" に、主な画面と要素を記録する
 
 ### Step 5: セッション計画を立て、3〜5行で提示する
@@ -88,6 +88,11 @@ Web 版の7ステップと同じ流れで、次のところだけ読み替える
 - **操作の前に `mobile_get_foreground_app` で前面が対象アプリか確かめる**。違っていたら(クラッシュしてホーム画面に戻った、
   別のアプリが前に出た)、そのまま触り続けない。`mobile_list_crashes` を見てクラッシュなら Finding / バグとして記録し、
   `mobile_launch_app` で起動し直してから続ける
+- **対象アプリ以外の画面を撮らない**。ホーム画面・他のアプリ・通知欄・最近使ったアプリの画面は、スクショ
+  (`mobile_take_screenshot` / `mobile_save_screenshot`)も録画もしない。端末には他の開発中アプリが入っているため。
+  撮る直前に `mobile_get_foreground_app` で前面が対象アプリかを確かめる。外れていたときに要素一覧を読んでしまったら、
+  その中身(アプリ名など)は記録に書き写さず、「対象外の画面に出た」とだけ session-log に残す
+- 戻るキーは、キーボードやシートが閉じ切っているとアプリを抜けてホーム画面に出る。連続で押さず、1回ごとに前面のアプリを確かめる
 - 入力は要素をタップしてから `mobile_type_keys`。日本語・全角スペース・絵文字もそのまま入る(実機で確認済み)。
   ただし IME の変換は通らないので、変換中の挙動は `manual-tests.md` に回す
 - 複数の操作をまとめるときは `mobile_batch_commands` を使ってよい。人には不可能な速さ(1操作 20ms 程度)で連続するので、
@@ -177,5 +182,6 @@ node scripts/android-device-state.mjs end <端末ID>
 - Web 版の「守るべきこと」はすべて同じ
 - 本物の認証情報を入力しない。ログインが必要なアプリは、人があらかじめ端末上でテストアカウントでログインしておく
 - 端末とアプリを取り違えない(Step 0 の確認、spec 実行時の `--device` の明示、操作前の前面アプリの確認)
+- 対象アプリ以外の画面(ホーム画面・他のアプリ・通知欄・最近使ったアプリ)のスクショを撮らない・保存しない(CLAUDE.md)
 - テレメトリは止めたまま使う。Mobilewright は `npm run test:android` / `android:doctor` / `android:inspect` / `android:codegen` からだけ起動する
 - チャーター駆動モード(`charter=`)は、この版ではまだ扱わない

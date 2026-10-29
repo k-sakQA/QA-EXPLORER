@@ -31,6 +31,9 @@ Webアプリを「28観点リスト」に沿って自律的に探索テストす
 - Android の spec は Mobilewright。`tests/generated/android/<target-slug>/*.android.spec.ts` に保存し、
   `npm run test:android -- <target-slug>` で実行する。Mobilewright・mobilecli は直接起動しない
   (テレメトリ停止と、対象アプリ・端末の確認を通すため。フックで止められる)
+- Android 端末はテスト専用とは限らない(他の開発中アプリも入っている)。**対象アプリ以外の画面
+  (ホーム画面・他のアプリ・通知欄・最近使ったアプリ)のスクリーンショットは撮らない・保存しない**。
+  撮る前に前面のアプリが対象かを確かめ、外れていたら要素一覧の中身も記録に書き写さない
 - 結果・バグは必ず `reports/<target-slug>/` 配下の Markdown に記録(詳細は loop-rules.md)
 - セレクタは role/name 優先、CSS依存は最小限
 - テスト失敗はまず実装側のバグを疑う。テスト修正は最後の手段
