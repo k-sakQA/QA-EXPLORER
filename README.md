@@ -112,8 +112,8 @@ Claude Code、または VS Code チャット(**Agent モード**)で以下を入
 ```
 PC に USB でつないだ Android 端末のアプリを、Web 版と同じ28観点・同じナレッジ蓄積ループで探索します。
 画面の読み取りと操作は mobile-mcp、spec の実行は Mobilewright(`npm run test:android -- <target-slug>`)です。
-JDK・Android SDK・端末の準備が別に要ります。導入手順・使い方・運用ルールは
-[docs/android-support-plan.md](docs/android-support-plan.md) を参照してください。
+adb と端末の準備が別に要ります。準備の手順とコマンドの一覧は [docs/android-setup.md](docs/android-setup.md)、
+なぜこの作りにしたかは [docs/android-support-plan.md](docs/android-support-plan.md) を参照してください。
 
 ### Copilot Chat での実行コマンド
 

@@ -1,9 +1,10 @@
-# Android ネイティブアプリ対応 — 追加内容・依存関係・使い方
+# Android ネイティブアプリ対応 — 追加内容・依存関係・判断の記録
 
 - 作成日: 2026-10-23(同日、レビュー指摘を反映: 取り違え防止・制限の経路・テレメトリの抜け道・異常終了時の後片付け)
 - 状態: 実装前の計画。実装中に分かった差分は、この文書に反映する
 - 対象 PC: **macOS と Windows 11**(複数人で使う前提。どちらも Claude Code から使う)
 - 判断の経緯: [feasibility-android-adb.md](feasibility-android-adb.md)
+- 準備とコマンドの手順書: [android-setup.md](android-setup.md)
 
 ---
 
@@ -119,7 +120,7 @@ adb が2つあると、版の違いで「adb server version doesn't match」と�
 **実機だけなら、adb(platform-tools)だけで動いた**(2026-10-23、Mac + Sony Xperia XQ-BQ42 / Android 13)。
 JDK・Android Studio を入れず、`ANDROID_HOME` も未設定のまま、mobile-mcp での操作も spec の実行も通った。
 `npm run android:doctor` は JDK と `ANDROID_HOME` の不足を指摘するが、実機での実行には影響しなかった。
-そこで §3.1 は「最小構成(実機のみ)」と「エミュレータも使う場合」に分けた。Windows では未確認。
+そこで手順書の PC の準備は「最小構成(実機のみ)」と「エミュレータも使う場合」に分けた。Windows では未確認。
 
 ### Mac と Windows で同じ設定にするための工夫
 
@@ -150,7 +151,7 @@ JDK・Android Studio を入れず、`ANDROID_HOME` も未設定のまま、mobil
 ### 端末側
 
 - **専用の Android 端末**: 個人の Google アカウントを入れない(画面の内容が AI に渡るのと、アプリのデータが Google ドライブへ自動バックアップされるのを防ぐため)
-- **開発者向けオプションと USB デバッグを有効にする**(手順は §3.2)
+- **開発者向けオプションと USB デバッグを有効にする**(手順は [android-setup.md](android-setup.md) §3)
 - **データ通信ができる USB ケーブル**: 充電専用のケーブルでは認識されない
 - **テスト対象アプリのテスト用ビルド(APK)**
 - 対応する Android の版は Mobilewright に記載が無い → 導入時に確認する
@@ -159,200 +160,8 @@ JDK・Android Studio を入れず、`ANDROID_HOME` も未設定のまま、mobil
 
 ## 3. 使い方
 
-### 3.1 初回だけ: PC の準備
-
-#### 最小構成(実機のみ)
-
-adb(platform-tools)だけを入れる。Mac ではこれで動くことを確認済み(§2)。
-
-- Mac
-
-  ```bash
-  brew install --cask android-platform-tools
-  ```
-
-- Windows: [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) を展開し、そのフォルダを `Path` に追加する。
-  あわせて端末メーカーの USB ドライバを入れる(Pixel は Google USB Driver)。Windows での動作は未確認
-
-この後は「共通」へ進む。`npm run android:doctor` が JDK と `ANDROID_HOME` の不足を指摘しても、実機での実行は動く。
-
-#### エミュレータも使う場合、または最小構成で動かなかった場合: Mac
-
-1. JDK を入れる(例: Eclipse Temurin。JDK 11 以上なら他の配布元でもよい)
-
-   ```bash
-   brew install --cask temurin@21
-   ```
-
-2. Android Studio を入れ、SDK Manager から platform-tools などを入れる
-3. `~/.zshrc` に環境変数を書き、ターミナルを開き直す
-
-   ```bash
-   export JAVA_HOME=$(/usr/libexec/java_home)
-   export ANDROID_HOME=$HOME/Library/Android/sdk
-   export PATH=$ANDROID_HOME/platform-tools:$PATH
-   ```
-
-4. Homebrew で adb を入れていたら外す(SDK の adb に揃える)
-
-   ```bash
-   brew uninstall --cask android-platform-tools
-   ```
-
-#### エミュレータも使う場合、または最小構成で動かなかった場合: Windows
-
-1. JDK を入れる(例: Eclipse Temurin。JDK 11 以上なら他の配布元でもよい)
-
-   ```powershell
-   winget install EclipseAdoptium.Temurin.21.JDK
-   ```
-
-2. Android Studio を入れ、SDK Manager から platform-tools などを入れる。
-   端末が Pixel なら、SDK Manager の「SDK Tools」タブで「Google USB Driver」も入れる。
-   ほかのメーカーの端末は、そのメーカーの USB ドライバを入れる
-
-   ```powershell
-   winget install Google.AndroidStudio
-   ```
-
-3. 「システム環境変数の編集」→「環境変数」で、ユーザー環境変数を設定し、ターミナルと Claude Code を開き直す
-
-   | 変数 | 値(既定のインストール先の場合) |
-   |---|---|
-   | `JAVA_HOME` | `C:\Program Files\Eclipse Adoptium\jdk-21.x.x-hotspot`(入った版のフォルダ) |
-   | `ANDROID_HOME` | `%LOCALAPPDATA%\Android\Sdk` |
-   | `Path` に追加 | `%LOCALAPPDATA%\Android\Sdk\platform-tools` |
-
-4. 端末メーカーの管理ソフトなどで別の adb が入っていたら、PATH の上で SDK の adb が先に見つかるようにする
-
-#### 共通
-
-1. 依存を入れる
-
-   ```bash
-   npm install
-   ```
-
-2. 環境を確認する(不足があれば、何をすればよいかが表示される)
-
-   ```bash
-   npm run android:doctor
-   ```
-
-3. Claude Code を開き直す(`.mcp.json` に足した mobile-mcp を読み込ませる。初回は MCP サーバーの承認を求められる)
-4. **mobilenext.ai にはログインしない**(クラウド端末を使わないため。§1「制限と、その効き方」)
-5. 端末の通知をオフにする(おやすみモードなど)。対象アプリを前面に出していても、mobile-mcp の要素一覧には
-   ステータスバーの通知の文言まで入り、AI に渡るため(§6)
-
-### 3.2 初回だけ: 端末の準備
-
-1. **開発者向けオプションを出す**: 設定 → デバイス情報(端末情報)→「ビルド番号」を7回タップ(メーカーによって場所が少し違う)
-2. **USB デバッグを有効にする**: 設定 → システム → 開発者向けオプション →「USB デバッグ」を ON。
-   あわせて「スリープモードにしない(充電中は画面をスリープにしない)」も ON にしておくと、テスト中に画面が消えない
-3. **アニメーションをオフにする**: 開発者向けオプションの「ウィンドウ アニメスケール」「トランジション アニメスケール」
-   「Animator 再生時間スケール」をオフにする。アニメーション中は画面の読み取りが失敗しやすいため。
-   最初から端末の設定にしておけば、テストの途中で変えずに済む
-4. **画面ロックを無しにする**(専用端末なので)。ロック画面で止まるとテストが進まない
-5. **PC と USB ケーブルでつなぐ**。端末に「USB デバッグを許可しますか?」と出たら、
-   「このパソコンからの USB デバッグを常に許可する」にチェックして許可する
-6. **認識されたか確認する**
-
-   ```bash
-   adb devices
-   ```
-
-   `XXXXXXXX	device` と出れば OK。左の `XXXXXXXX` が端末 ID(複数台つなぐときに指定する)。
-
-   - `unauthorized` → 端末側の許可ダイアログを確認する
-   - 何も出ない → ケーブルがデータ通信に対応しているか、USB デバッグが ON か確認する。
-     Windows では USB ドライバが入っているかも確認する(デバイス マネージャーで端末に「!」が付いていないか)
-
-7. **テスト用アプリを入れる**(このコマンドは人が実行する。AI が実行するときは承認を求められる)
-
-   ```bash
-   adb install -r path/to/app.apk
-   ```
-
-8. **パッケージ名を調べる**(`/explore-android` に渡す)。名前の一部で絞り込める
-
-   ```bash
-   adb shell pm list packages shop
-   ```
-
-9. **ログインが必要なアプリは、人が端末上でテストアカウントでログインしておく**。
-   Web 版の `npm run auth` に当たる手順。AI にはパスワードを入力させない
-
-### 3.3 探索テストを走らせる
-
-顧客案件は、**企業が契約している LLM のアカウント(または API キー)で Claude Code にログインしてから**始める。
-
-Claude Code で次のように実行する(Web 版の `/explore` と同じ形)。`device=` は、端末を1台だけつないでいるなら省略できる。
-
-```
-/explore-android package=com.example.shop device=XXXXXXXX intent=カートから購入確定までを中心に
-```
-
-エージェントは次のように進める。進んでいる間は端末に触らない。
-
-1. 端末を1台に決め、対象アプリが入っているかを確認する。複数台つながっていて `device=` が無ければ、止まって聞く
-2. 前回の端末設定の記録が残っていれば、先に元に戻してから知らせる。そのうえで今回の開始時の設定を記録する
-3. 対象スラッグ(`android-com-example-shop`)を作り、findings / coverage / session-log を用意する(2回目以降は前回の続きから)
-4. アプリを起動し、mobile-mcp で画面を見て、観点ごとに欠陥仮定を立てる
-5. `tests/generated/android/android-com-example-shop/viewpoint-NN-<keyword>.android.spec.ts` を書いて実行する
-6. バグ・Finding・Hypothesis を記録する。根拠のスクショ・動画は `reports/<target-slug>/evidence/` に保存する
-7. セッション終了時に、記録しておいた端末設定に戻す
-
-### 3.4 spec を再実行する
-
-対象スラッグの指定は必須(全対象をまとめて実行する手段は無い)。
-
-```bash
-npm run test:android -- android-com-example-shop
-```
-
-1ファイルだけ実行する(ファイル名の一部で絞り込める)。
-
-```bash
-npm run test:android -- android-com-example-shop viewpoint-09
-```
-
-端末を複数つないでいるときは、端末 ID を指定する(指定が無いと実行前に止まる)。
-
-```bash
-npm run test:android -- android-com-example-shop --device XXXXXXXX
-```
-
-対象アプリが指定した端末に入っていなければ、実行前に止まる。
-失敗時のスクショ・動画・ビューツリーは `test-results-android/` に出る。次の実行で消えるので、
-残したいものは `reports/<target-slug>/evidence/` に移す。
-
-### 3.5 レポートを出す
-
-Web 版と同じ。
-
-```
-/qa-explorer-report
-```
-
-### 3.6 補助ツール(必要なときだけ)
-
-- **Inspector**: 端末の画面と、各要素のロケータをブラウザで確認できる。spec のセレクタを人が確かめたいときに使う
-
-  ```bash
-  npm run android:inspect
-  ```
-
-- **Codegen**: ブラウザ上で端末を操作すると、spec が書き起こされる
-
-  ```bash
-  npm run android:codegen
-  ```
-
-### 3.7 案件が終わったら
-
-- テスト用アプリを端末から消し、端末を初期化する
-- `.android-state/` に、その端末の記録が残っていないことを確認する(残っていれば、戻っていない設定がある)
-- Claude Code の会話履歴の該当セッションを削除する(Mac: `~/.claude/projects/`、Windows: `%USERPROFILE%\.claude\projects\`)
+手順書 [android-setup.md](android-setup.md) に移した(2026-10-30)。準備・コマンド・うまくいかないときの対処はそちらを見る。
+この文書には、なぜその作りにしたかと確認の記録だけを残す。
 
 ---
 
@@ -426,7 +235,7 @@ Web 版と同じ。
 | JDK・Android Studio 無し、adb(Homebrew の platform-tools)だけで動くか | **動いた**。`android:doctor` の警告(JDK・`ANDROID_HOME`)は実機では影響なし |
 | 端末の承認 | 最初は `unauthorized`。adb を再起動すると端末に許可ダイアログが出直し、通った |
 | mobile-mcp で画面を読めるか | 読めた。要素一覧は 1回 0.3 秒ほど。resource-id と読み上げ用の名前(「0 時間」など)が取れた |
-| 要素一覧に何が含まれるか | **対象アプリの外も含まれる**。ステータスバーの通知の文言(他のアプリの通知)まで AI に渡る → 端末の通知をオフにする手順を §3.1 に追加 |
+| 要素一覧に何が含まれるか | **対象アプリの外も含まれる**。ステータスバーの通知の文言(他のアプリの通知)まで AI に渡る → 端末の通知をオフにする手順を手順書に追加 |
 | まとめ押し(`mobile_batch_commands`) | 6回のタップが 0.13 秒で終わる。入力は落ちなかった(3回とも正しい値) |
 | 操作直後のスクショ | **更新前の画面が写った**(押した後の値ではなく、1つ前の値)。mobile-mcp は画面の更新を待たないため → 「要素一覧で状態を確かめてから保存する」を手順書に追加 |
 | 日本語入力 | `mobile_type_keys` で「画面　ロック😀」(漢字・全角スペース・絵文字)がそのまま入った(設定アプリの検索欄で確認)。Mobilewright の `fill()` は未確認 |

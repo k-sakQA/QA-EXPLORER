@@ -11,7 +11,7 @@ Webアプリを「28観点リスト」に沿って自律的に探索テストす
 - `/risk-design` — [前段] チャーター設計。手順は `.github/agents/qa-risk-designer.agent.md`
 - `/explore` — 自律探索モード(観点駆動)。手順は `.github/agents/qa-explorer.agent.md`
 - `/explore-android` — USB でつないだ Android 端末のネイティブアプリの自律探索(Claude Code のみ)。
-  手順は `.claude/agents/qa-explorer-android.md`、導入と運用は `docs/android-support-plan.md`
+  手順は `.claude/agents/qa-explorer-android.md`、準備とコマンドは `docs/android-setup.md`、設計の経緯は `docs/android-support-plan.md`
 - `/run-cases` — テストケース駆動実行モード。手順は `.github/agents/qa-runner.agent.md`
 - `/qa-explorer-report` — 結果を1枚のHTMLレポートに集約
 
