@@ -21,7 +21,7 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@mobilenext/mobile-mcp": "1.0.12",
+    "@mobilenext/mobile-mcp": "1.0.14",
     "@mobilewright/test": "0.0.67",
     "@playwright/test": "^1.60.0",
     "mobilewright": "0.0.67",
