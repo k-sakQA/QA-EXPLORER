@@ -136,7 +136,16 @@ JDK・Android Studio を入れず、`ANDROID_HOME` も未設定のまま、mobil
 |---|---|---|---|
 | `mobilewright` | 0.0.67(固定) | devDependencies | 再生器の本体と CLI(`test` / `doctor` / `inspect` / `codegen`) |
 | `@mobilewright/test` | 0.0.67(固定) | devDependencies | spec を書くためのテストランナー |
-| `@mobilenext/mobile-mcp` | 1.0.12(固定) | devDependencies(`.mcp.json` から `node` で起動) | 探索の目と手 |
+| `@mobilenext/mobile-mcp` | 1.0.13(固定) | devDependencies(`.mcp.json` から `node` で起動) | 探索の目と手 |
+
+- **mobile-mcp の SDK は `overrides` で1つだけ上げている**(2026-10-30): 1.0.13 でも `@modelcontextprotocol/node` が
+  2.0.0 に固定されていて、`npm audit` で high(GHSA-f897-62hf-6gxq)と、その下の `@hono/node-server` の moderate
+  (GHSA-rmxm-3fg6-px4f)が残るため、`package.json` の `overrides` で 2.1.2 に上げた(`@hono/node-server` は 2.1.5 になる)。
+  このパッケージは `--listen` で HTTP サーバとして動かすときだけ使われ、`.mcp.json` の stdio 起動では通らない。
+  上げたあとも stdio での端末一覧の取得と、localhost での HTTP 起動・初期化が動くことを確認した。
+  mobile-mcp 側が 2.1.0 以上に上げたら `overrides` は消す
+- 1.0.14 にしなかったのは、追加が MCP クライアントへの登録コマンド(`install`)だけで、そのために依存が2つ
+  (`add-mcp` / `@clack/prompts`)増えるため。SDK の版は 1.0.13 と同じ
 
 - OS ごとの端末操作用のバイナリ(mobilecli)は、`npm install` で今の OS に合うものが自動で入る(macOS / Windows / Linux、x64 / ARM)
 - どれも 0.0.x〜1.0.x で変化が速いので、`@latest` は使わず版を固定する。上げるときは CHANGELOG を読んでから
