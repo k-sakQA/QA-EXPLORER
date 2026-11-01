@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIテスト実況</title>
+  <!--
+    QA Explorer のテスト実況プレイヤー。
+    データは id="commentary-data" の JSON ブロックだけを差し替える。
+    (このコメントにタグそのものを書かないこと。文字列置換で先にこちらへ当たるため)
+    書式は .claude/agents/qa-commentator.md の「台本の書式」を参照。
+  -->
+  <style>
+    :root {
+      --bg: #f4f5f8; --panel: #ffffff; --ink: #1f2430; --sub: #687083; --line: #e3e6ee;
+      --board-bg: #141822; --board-ink: #f2f4f8; --board-sub: #98a2b8;
+      --play: #2563eb; --play-bg: #eef3ff;
+      --color: #b45309; --color-bg: #fff6e8;
+      --bug: #dc2626; --misplay: #7c3aed; --hypo: #0f766e; --hand: #ca8a04; --vp: #2563eb;
+      --live: #ef4444;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0e1118; --panel: #171b25; --ink: #e6e9f0; --sub: #9aa3b5; --line: #2a3040;
+        --board-bg: #0a0d13; --play: #7aa2ff; --play-bg: #1a2338; --color: #f0a74a; --color-bg: #2b2215;
+        --bug: #f87171; --misplay: #a78bfa; --hypo: #2dd4bf; --hand: #facc15; --vp: #7aa2ff;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e1118; --panel: #171b25; --ink: #e6e9f0; --sub: #9aa3b5; --line: #2a3040;
+      --board-bg: #0a0d13; --play: #7aa2ff; --play-bg: #1a2338; --color: #f0a74a; --color-bg: #2b2215;
+      --bug: #f87171; --misplay: #a78bfa; --hypo: #2dd4bf; --hand: #facc15; --vp: #7aa2ff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ===== スコアボード ===== */
+    .board { background: var(--board-bg); color: var(--board-ink); padding: 14px 16px 12px; position: sticky; top: 0; z-index: 2; }
+    .board-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 960px; margin: 0 auto; }
+    .onair { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 4px; background: #334155; }
+    .onair.live { background: var(--live); animation: blink 1.6s infinite; }
+    @keyframes blink { 50% { opacity: .55; } }
+    .board h1 { font-size: 16px; font-weight: 700; }
+    .board .meta { font-size: 12px; color: var(--board-sub); width: 100%; max-width: 960px; margin: 2px auto 0; overflow-wrap: anywhere; }
+    .clock { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 20px; font-weight: 700; letter-spacing: .04em; }
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 960px; margin: 10px auto 0; }
+    .stat { background: rgba(255,255,255,.06); border-radius: 8px; padding: 6px 4px; text-align: center; transition: background .3s; }
+    .stat.pop { background: rgba(255,255,255,.22); }
+    .stat .n { font-size: 22px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat .l { font-size: 11px; color: var(--board-sub); }
+    .stat.bug .n { color: #fca5a5; } .stat.misplay .n { color: #c4b5fd; }
+    .stat.hypo .n { color: #5eead4; } .stat.hand .n { color: #fde68a; }
+
+    /* ===== チャプター ===== */
+    .chapters { display: flex; gap: 6px; overflow-x: auto; max-width: 960px; margin: 10px auto 0; scrollbar-width: none; }
+    .chapters::-webkit-scrollbar { display: none; }
+    .chip { flex: none; border: 1px solid rgba(255,255,255,.18); background: transparent; color: var(--board-sub); border-radius: 999px; padding: 2px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .chip.done { color: var(--board-ink); }
+    .chip.now { border-color: var(--board-ink); background: var(--board-ink); color: var(--board-bg); font-weight: 700; }
+
+    /* ===== 実況フィード ===== */
+    .feed { width: 100%; max-width: 992px; margin: 0 auto; padding: 4px 16px 96px; }
+    .chapter-title { margin: 22px 0 10px; font-size: 13px; font-weight: 700; color: var(--sub); display: flex; align-items: center; gap: 10px; }
+    .chapter-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+    .msg { display: flex; gap: 10px; margin: 10px 0; animation: rise .25s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+    .msg.color { flex-direction: row-reverse; }
+    .who { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; }
+    .msg.play .who { background: var(--play); }
+    .msg.color .who { background: var(--color); }
+    .bubble { max-width: min(640px, 82%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 9px 14px 8px; }
+    .msg.play .bubble { border-top-left-radius: 4px; background: var(--play-bg); }
+    .msg.color .bubble { border-top-right-radius: 4px; background: var(--color-bg); }
+    .bubble .name { font-size: 11px; font-weight: 700; color: var(--sub); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .bubble .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .bubble code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: rgba(127,127,127,.15); border-radius: 4px; padding: 0 4px; }
+    .bubble .src { font-size: 11px; color: var(--sub); margin-top: 4px; }
+    .bubble img { display: block; max-width: 100%; max-height: 360px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--line); }
+    .tag { font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 1px 7px; border-radius: 4px; color: #fff; }
+    .tag.bug { background: var(--bug); } .tag.misplay { background: var(--misplay); }
+    .tag.hypothesis, .tag.confirmed, .tag.rejected { background: var(--hypo); }
+    .tag.handoff { background: var(--hand); color: #1f2430; } .tag.viewpoint { background: var(--vp); }
+    .msg.k-bug .bubble { box-shadow: 0 0 0 2px var(--bug); }
+    .msg.k-misplay .bubble { box-shadow: 0 0 0 2px var(--misplay); }
+    .msg.focus .bubble { box-shadow: 0 0 0 3px var(--hand); animation: focus 1.2s ease-out 2; }
+    @keyframes focus { 0% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 3px var(--hand); } }
+    .notice { margin: 16px 0; font-size: 13px; color: var(--sub); text-align: center; }
+    .caret::after { content: "▍"; animation: blink 1s infinite; color: var(--sub); }
+
+    /* ===== 操作バー ===== */
+    .controls { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); z-index: 3; }
+    .controls-in { max-width: 960px; margin: 0 auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .controls button { flex: none; white-space: nowrap; font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+    .controls button.primary { background: var(--play); border-color: var(--play); color: #fff; font-weight: 700; min-width: 92px; }
+    #btn-speed { min-width: 48px; font-variant-numeric: tabular-nums; }
+    .progress { flex: 1; min-width: 120px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+    .progress div { height: 100%; width: 0; background: var(--play); transition: width .3s; }
+    .count { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
+    @media (max-width: 560px) {
+      .board { padding: 10px 16px; }
+      .board h1 { font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .board .meta { display: none; }
+      .stats { gap: 4px; margin-top: 8px; }
+      .stat { padding: 4px 2px; }
+      .stat .n { font-size: 17px; } .stat .l { font-size: 9px; line-height: 1.3; }
+      .clock { font-size: 15px; }
+      .controls-in { flex-wrap: nowrap; gap: 6px; }
+      .controls button { padding: 6px 9px; }
+      .controls button.primary { min-width: 0; }
+      .count { display: none; }
+      .bubble { max-width: 86%; }
+      .who { width: 32px; height: 32px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="board">
+    <div class="board-top">
+      <span class="onair" id="onair">REPLAY</span>
+      <h1 id="title">AIテスト実況</h1>
+      <span class="clock" id="clock">--:--</span>
+    </div>
+    <div class="meta" id="meta"></div>
+    <div class="stats">
+      <div class="stat" id="s-viewpoint"><div class="n">0</div><div class="l">観点・Probe</div></div>
+      <div class="stat bug" id="s-bug"><div class="n">0</div><div class="l">新規バグ</div></div>
+      <div class="stat hypo" id="s-hypo"><div class="n">0</div><div class="l">仮説 立/的中</div></div>
+      <div class="stat misplay" id="s-misplay"><div class="n">0</div><div class="l">自己修正</div></div>
+      <div class="stat hand" id="s-handoff"><div class="n">0</div><div class="l">人間へパス</div></div>
+    </div>
+    <nav class="chapters" id="chapters" aria-label="チャプター"></nav>
+  </header>
+
+  <main class="feed" id="feed" aria-live="polite"></main>
+
+  <div class="controls">
+    <div class="controls-in">
+      <button class="primary" id="btn-play">▶ 再生</button>
+      <button id="btn-next" title="次のコメントへ(→キー)">⏭ 次へ</button>
+      <button id="btn-speed" title="再生速度">1x</button>
+      <button id="btn-all">全部表示</button>
+      <div class="progress"><div id="bar"></div></div>
+      <span class="count" id="count">0 / 0</span>
+    </div>
+  </div>
+
+  <script type="application/json" id="commentary-data">
+{
+  "title": "AIテスト実況 — ホテル予約サイト Session #7",
+  "target": "https://hotel-example-site.takeyaqa.dev/ja/reserve.html?plan-id=0",
+  "session": "#7",
+  "date": "2026-10-21",
+  "intent": "広く浅く。セキュリティ攻撃のような操作はしない",
+  "status": "final",
+  "liveUpTo": "",
+  "lines": [
+    {
+      "chapter": "キックオフ",
+      "t": "",
+      "who": "play",
+      "text": "さあ始まりました AIテスト実況。舞台はおなじみホテル予約サイト、Session #7 です。前回から半年ぶりの登場!",
+      "src": "session-log.md › Session 2026-10-21 (#7)"
+    },
+    {
+      "chapter": "キックオフ",
+      "t": "",
+      "who": "color",
+      "text": "今回、AI はいきなり操作に入らず、まず公開JSを読んでいます。読んだら実装がかなり変わっていた。だから過去の Finding を前提にせず、今のコードから欠陥仮定を立て直す、という作戦です。",
+      "src": "thinking-log.md › セッション計画の思考"
+    },
+    {
+      "chapter": "キックオフ",
+      "t": "",
+      "who": "play",
+      "text": "コード読解で見えたネタが並びます。予約内容は確認画面を開いた瞬間に消える使い捨て方式。予約できる日付は端末の時計まかせ。2/31 のような存在しない日付も素通りしそう。案内は「3ヶ月以内」なのに実装は「90日以内」。",
+      "src": "session-log.md › 事前調査で分かったこと"
+    },
+    {
+      "chapter": "キックオフ",
+      "t": "",
+      "who": "color",
+      "text": "そして一手、あえて打たない手があります。Planned の Probe(画面に見えない料金の値を書き換えて送る)は、intent の「攻撃のような操作はしない」に当たるので持ち越し。ルールより intent を優先した判断ですね。",
+      "src": "session-log.md › 計画"
+    },
+    {
+      "chapter": "キックオフ",
+      "t": "",
+      "who": "color",
+      "text": "主戦場は新しく入った観点 24〜28。サーバーが無いサイトなので、「予約内容がブラウザのどこに置かれ、いつ消えるか」を CRUD の代わりに追います。本命は 25(2つのタブで同時に予約)と 27(端末の時計)と読んでいる。",
+      "src": "thinking-log.md › セッション計画の思考"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "23:30",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "入りました、最初の一手は観点26「削除と参照整合」。未着手の P0 です。",
+      "src": "thinking-log.md › Iter 1"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "color",
+      "text": "この観点で見るのは「確認画面に渡した予約内容が、いつ・どう消えるか」。確認画面でリロードする、確認画面のURLを開き直す、戻ってもう一度送る。利用者がやりそうな操作をぶつけます。",
+      "src": "thinking-log.md › Iter 1 › 🎯🧠"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "play",
+      "text": "4ケース実行……3件失敗! 使い終わった予約の取引IDが消えずに残る、使い終わった確認画面がもう一度出る、と出ています。",
+      "src": "thinking-log.md › Iter 1 › 📊"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "play",
+      "kind": "misplay",
+      "text": "いや、ここで AI が待ったをかけた。3件のうち2件はテスト側の誤りです!",
+      "src": "thinking-log.md › Iter 1 › 📊",
+      "headline": "見出しだけ見て表示できたと思った偽陽性に気づく"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "color",
+      "text": "確認画面の見出し「宿泊予約確認」は、最初からページに書いてある文字。見えた瞬間に「表示できた」と思っちゃった、これはおっちょこちょいでした。中身が描かれる前に次の操作へ進んでいたんです。",
+      "src": "thinking-log.md › Iter 1 › 👁️📊"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "color",
+      "text": "描画完了を待つように直したら通った。偽陽性をそのまま起票しなかった、ここは大きい。",
+      "src": "thinking-log.md › Iter 1 › 📊"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "play",
+      "kind": "handoff",
+      "text": "残った1件。確認画面でリロード(F5)すると、説明もなくトップへ飛ばされて入力が全部消える。ただ、コード上は「確認画面は1回しか開けない」という意図した作り。バグにはせず Needs-Human(F-20261021-01)で人間にパス。",
+      "src": "thinking-log.md › Iter 1 › 📊",
+      "headline": "リロードで入力が消える件を人間へ",
+      "refs": [
+        "F-20261021-01"
+      ]
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "color",
+      "text": "収穫はここ。リロードで消えたのは、確認画面に渡す予約内容を「そのタブの中だけ」に置いているから。一方、どの予約かを指す取引IDは「ブラウザ全体で1つ」を全タブで共有している。",
+      "src": "thinking-log.md › Iter 1 › 💡"
+    },
+    {
+      "chapter": "Iter 1 観点26",
+      "t": "",
+      "who": "color",
+      "text": "じゃあ、2つのタブで別々の予約を進める人がいたら? 取引IDが上書きされて、片方の予約が迷子になるのでは。これが本命の観点25 への伏線です。",
+      "src": "thinking-log.md › Iter 1 › 💡"
+    },
+    {
+      "chapter": "Iter 2 観点28",
+      "t": "23:40",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "続いて観点28「操作可能ユーザー(認可)」。P0 のラスト1つ。",
+      "src": "thinking-log.md › Iter 2"
+    },
+    {
+      "chapter": "Iter 2 観点28",
+      "t": "",
+      "who": "color",
+      "text": "intent に従ってログインはしない。会員限定・プレミアム限定のプランのURLを、ログインしていない人が直接開いたらどうなるか、に絞りました。会員チェックは画面を開いた時だけで、予約を送る時にはしていない、というのは押さえています。",
+      "src": "thinking-log.md › Iter 2 › 🎯👁️"
+    },
+    {
+      "chapter": "Iter 2 観点28",
+      "t": "",
+      "who": "play",
+      "text": "限定プラン3つと存在しないプランのURLを直接開く、一覧にリンクが出るか、6/6 パス! ログインしていない人の入口はちゃんと塞がっている。",
+      "src": "thinking-log.md › Iter 2 › 📊"
+    },
+    {
+      "chapter": "Iter 2 観点28",
+      "t": "",
+      "who": "play",
+      "kind": "handoff",
+      "text": "ただし「会員として予約画面を開いた後、別のタブでログアウトしてから送信」なら通るかもしれない。ログインが要るので、手動テスト MT-20261021-01 として人間へ。",
+      "src": "thinking-log.md › Iter 2 › 📊",
+      "headline": "会員ランク比較を手動テストへ",
+      "refs": [
+        "MT-20261021-01"
+      ]
+    },
+    {
+      "chapter": "Iter 2 観点28",
+      "t": "",
+      "who": "color",
+      "text": "「チェックは画面を開いた時だけ」という作りは観点27 でも効いてくるはず。予約画面を開いたまま日付が変わったら? と次を見ています。",
+      "src": "thinking-log.md › Iter 2 › 💡"
+    },
+    {
+      "chapter": "Iter 3 観点24",
+      "t": "23:55",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "P1 に入ります。観点24「生成と一意性」。",
+      "src": "thinking-log.md › Iter 3"
+    },
+    {
+      "chapter": "Iter 3 観点24",
+      "t": "",
+      "who": "color",
+      "text": "狙いは「確認ボタンのダブルクリック」。押すたびに予約内容をタブの中に1件ずつ作り、しかもボタンは押した後も押せるまま。2回押すと2件でき、確認画面が使うのは1件だけ。残りが置き去りになるのでは、という仮定です。",
+      "src": "thinking-log.md › Iter 3 › 🎯👁️🧠"
+    },
+    {
+      "chapter": "Iter 3 観点24",
+      "t": "",
+      "who": "play",
+      "kind": "bug",
+      "text": "出た! 確認画面に使われない予約内容が1件、タブの中に残り続ける。中身は氏名・連絡先入り、5/5 再現。共用PCなら次の人のブラウザに残る話です。起票(F-20261021-03、Low)。",
+      "src": "thinking-log.md › Iter 3 › 📊 / bugs/2026-10-21-viewpoint-24-orphan-transaction-on-double-click.md",
+      "headline": "ダブルクリックで氏名入りの予約内容が残る",
+      "refs": [
+        "F-20261021-03"
+      ]
+    },
+    {
+      "chapter": "Iter 3 観点24",
+      "t": "",
+      "who": "play",
+      "text": "次は既知バグ「予約完了の後に、もう一度予約ボタンを押せてしまう」の回帰確認。失敗……と思いきや、AI は「予約URLを直接開いたときだけでは?」と疑う。",
+      "src": "thinking-log.md › Iter 3 › 📊"
+    },
+    {
+      "chapter": "Iter 3 観点24",
+      "t": "",
+      "who": "color",
+      "text": "普段の利用者は、プラン一覧から予約画面を新しいタブで開く。その導線で試し直すと、完了後にタブが自動で閉じるので再現しない。前回の起票では見えていなかった条件です。新規バグにはせず、既存バグに追記しました。",
+      "src": "thinking-log.md › Iter 3 › 📊"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "00:10",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "日付が変わって 00:10、来ました本命、観点25「更新と競合」!",
+      "src": "thinking-log.md › Iter 4"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "color",
+      "text": "Iter 1 と 3 の伏線の回収です。プラン一覧は予約画面を新しいタブで開くから、プランを見比べながら2つのタブで予約を進めるのは普通にある。取引IDは全タブで1つ、送るたびに上書き。後から送ったタブが勝って、先のタブの予約が消える、と読んだ。",
+      "src": "thinking-log.md › Iter 4 › 🎯👁️🧠"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "color",
+      "text": "再現の仕方も丁寧です。「タブAの確認画面がまだ出ていない間にタブBで送る」を作るため、タブAの確認画面の読み込みをわざと止めておく。決め打ちの待ち時間は使わず、2つのタブを順番に操作する比較用のケースも用意しています。",
+      "src": "thinking-log.md › Iter 4 › 🔬"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "play",
+      "text": "最初の実行は……30秒タイムアウト! 末尾には「Target page has been closed」。",
+      "src": "thinking-log.md › Iter 4 › 📊"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "play",
+      "kind": "misplay",
+      "text": "AI、末尾のエラーを鵜呑みにしない。時刻を記録して遡ります。止まっていたのはタブAの「確認する」ボタンのクリック。自分で止めた確認画面が出てくるのを、クリックが待ち続けていた。テストの誤りです!",
+      "src": "thinking-log.md › Iter 4 › 📊",
+      "headline": "自分で止めた画面を待つクリックに気づいて修正"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "color",
+      "text": "自分で止めた遷移を、自分でずっと待っていた。今日2回目のうっかりです。",
+      "src": "thinking-log.md › Iter 4 › 📊"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "color",
+      "text": "ボタンを押す代わりに送信だけを起こす形(requestSubmit)に修正。本人も総括で「末尾の Target closed をそのまま信じていたら誤った結論になっていた」と書いています。最初の異常まで遡る、ベテランの動きですね。",
+      "src": "thinking-log.md › Iter 4 › 📊 / セッション総括"
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "play",
+      "kind": "bug",
+      "text": "直して再実行、仮説どおりタブAがトップへ飛ばされて入力が全部消える、3/3! 2つのタブを順番に操作したときは問題なし。起票です(F-20261021-05、Low)。",
+      "src": "thinking-log.md › Iter 4 › 📊 / bugs/2026-10-21-viewpoint-25-two-tabs-reservation-lost.md",
+      "headline": "2タブで先の予約が消える",
+      "refs": [
+        "F-20261021-05"
+      ]
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "play",
+      "kind": "hypothesis",
+      "text": "ここで仮説 H-20261021-01 が立ちました!",
+      "src": "thinking-log.md › Iter 4 › 💡",
+      "headline": "確認画面への受け渡し1回きり説を立てる",
+      "refs": [
+        "H-20261021-01"
+      ]
+    },
+    {
+      "chapter": "Iter 4 観点25",
+      "t": "",
+      "who": "color",
+      "text": "リロードで消える(F-01)、ダブルクリックで残る(F-03)、2タブで消える(F-05)。3つは「確認画面への受け渡しが1回きり・1本だけ」という同じ原因、と束ねた。なら「戻る→進む」でも消えるはず、と Probe を次に回します。",
+      "src": "thinking-log.md › Iter 4 › 💡"
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "00:25",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "Probe P-20261021-01 の検証へ。Planned Probe は未着手の観点より優先、ルールどおりの順番です。",
+      "src": "thinking-log.md › Iter 5",
+      "refs": [
+        "P-20261021-01"
+      ]
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "",
+      "who": "play",
+      "text": "確認画面から「戻る」→「進む」、それと確認画面の読み込みが途中で止まってからの送り直し。2件とも仮説どおり失敗!",
+      "src": "thinking-log.md › Iter 5 › 📊"
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "",
+      "who": "color",
+      "text": "ところが AI はすぐにバグにしない。普段のブラウザは「戻る/進む」で前の画面をそのまま復元します(bfcache)。テスト用のブラウザではそれが効いていない(`pageshow.persisted=false`)ことを確かめたんです。",
+      "src": "thinking-log.md › Iter 5 › 📊"
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "",
+      "who": "color",
+      "text": "つまり、普段の Chrome や Safari を使う利用者には起きない可能性が高い。",
+      "src": "thinking-log.md › Iter 5 › 📊"
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "",
+      "who": "color",
+      "text": "これは過去の「戻ると入力が消える」バグ3件にも同じ疑いがかかる、という気づきにつながりました。本人の総括でも、今回一番大きな気づきはバグそのものよりこれだ、と。",
+      "src": "thinking-log.md › Iter 5 › 📊 / セッション総括"
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "",
+      "who": "play",
+      "kind": "handoff",
+      "text": "普段のブラウザで「戻る/進む」したときに入力と確認画面が残るかは、手動テスト MT-20261021-02 [High] として人間へパス(F-20261021-06 Needs-Human)。",
+      "src": "thinking-log.md › Iter 5 › 📊 / manual-tests.md › MT-20261021-02",
+      "headline": "普段のブラウザでの戻る・進むを人間へ",
+      "refs": [
+        "MT-20261021-02",
+        "F-20261021-06"
+      ]
+    },
+    {
+      "chapter": "Iter 5 Probe(観点13)",
+      "t": "",
+      "who": "play",
+      "kind": "confirmed",
+      "text": "読み込みが途中で止まってからの送り直しは、ブラウザの違いと関係ない。1回目の予約内容(氏名入り)が置き去りになる、ダブルクリックのバグの別ルートとして追記。そして H-20261021-01、Confirmed!",
+      "src": "thinking-log.md › Iter 5 › 📊💡",
+      "headline": "確認画面への受け渡し1回きり説が的中",
+      "refs": [
+        "H-20261021-01",
+        "P-20261021-01",
+        "F-20261021-07"
+      ]
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "00:40",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "未着手の最後の1つ、観点27「操作可能期間」。もう一つの本命です。",
+      "src": "thinking-log.md › Iter 6"
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "color",
+      "text": "予約できる日付は、利用者の端末の時計とタイムゾーンだけで決まる作り。狙うのは、案内の「3ヶ月以内」を信じて日付を選ぶ人、画面を開いたまま日付をまたぐ人、海外から予約する人です。",
+      "src": "thinking-log.md › Iter 6 › 🎯🔬"
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "color",
+      "text": "テストでは端末の時計を 2026-10-22 10:00(日本時間)に固定して、いつ実行しても同じ結果に(`page.clock`)。試す日付は90日後・91日後と、カレンダーでちょうど3ヶ月後の 2027/01/22。",
+      "src": "thinking-log.md › Iter 6 › 🎯🔬"
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "play",
+      "kind": "bug",
+      "text": "90日後は可、91日後は不可で実装どおり。ところが「3ヶ月以内」を信じて 2027/01/22 を選ぶと「3ヶ月以内の日付を入力してください」で弾かれた! 案内とエラーが自己矛盾、起票です(F-20261021-08、Low)。",
+      "src": "thinking-log.md › Iter 6 › 📊 / bugs/2026-10-21-viewpoint-27-three-months-vs-90-days.md",
+      "headline": "「3ヶ月以内」が3ヶ月ちょうどを弾く",
+      "refs": [
+        "F-20261021-08"
+      ]
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "play",
+      "text": "画面を開いたまま日付をまたいだケースは、正しく弾かれました。",
+      "src": "thinking-log.md › Iter 6 › 📊 / bugs/2026-10-21-viewpoint-27-three-months-vs-90-days.md"
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "play",
+      "kind": "handoff",
+      "text": "海外の件。ハワイ時刻の端末からだと、日本ではもう当日になっている日付を予約できてしまう。ただ、どの国の日付を基準にするかが仕様に書かれていないので Needs-Human(F-20261021-09)。",
+      "src": "thinking-log.md › Iter 6 › 📊",
+      "headline": "海外の端末から日本の当日を予約できる件を人間へ",
+      "refs": [
+        "F-20261021-09"
+      ]
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "color",
+      "text": "もう一つ正直な記録があります。4月の Finding は「91日後まで予約できる」、今は「90日後まで」。どちらが正しかったかは分からない、と書いて終わっている。分からないことを分からないと残すのは大事です。",
+      "src": "thinking-log.md › Iter 6 › 📊"
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "play",
+      "kind": "hypothesis",
+      "text": "仮説 H-20261021-02 が立ちました!",
+      "src": "thinking-log.md › Iter 6 › 💡",
+      "headline": "日付の計算は端末まかせ説を立てる",
+      "refs": [
+        "H-20261021-02"
+      ]
+    },
+    {
+      "chapter": "Iter 6 観点27",
+      "t": "",
+      "who": "color",
+      "text": "3ヶ月の件(F-08)も海外の件(F-09)も、日付の計算を端末まかせにしているのが原因。なら、キックオフで怪しいと見ていた「存在しない日付を打ち間違えたら?」も同じ根っこのはず。ここで Probe にして次に打ちます。",
+      "src": "thinking-log.md › Iter 6 › 💡"
+    },
+    {
+      "chapter": "Iter 7 Probe(観点23)",
+      "t": "00:50",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "Probe P-20261021-02、観点23「禁則」。存在しない日付を打ち間違えた人になります。",
+      "src": "thinking-log.md › Iter 7",
+      "refs": [
+        "P-20261021-02"
+      ]
+    },
+    {
+      "chapter": "Iter 7 Probe(観点23)",
+      "t": "",
+      "who": "color",
+      "text": "宿泊日は手入力できる欄で、チェックは「数字/数字/数字」の形かどうかだけ(`^\\d{4}/\\d{1,2}/\\d{1,2}$`)。打つ日付は、読み替えた結果が予約できる期間に入るものを選んでいる。期間外で弾かれると、読み替えが起きたか見分けられないからです。",
+      "src": "thinking-log.md › Iter 7 › 👁️🔬"
+    },
+    {
+      "chapter": "Iter 7 Probe(観点23)",
+      "t": "",
+      "who": "play",
+      "kind": "bug",
+      "text": "11/31、13/01、11/00 と打つと、3件とも確認画面へ進んだ! 宿泊日はそれぞれ 12/1、1/1、10/31 に化けた。打ち間違いがそのまま別の日の予約になる、Medium で起票(F-20261021-10)。",
+      "src": "thinking-log.md › Iter 7 › 📊 / bugs/2026-10-21-viewpoint-23-nonexistent-date-rolled-over.md",
+      "headline": "実在しない日付が別の日に化ける",
+      "refs": [
+        "F-20261021-10"
+      ]
+    },
+    {
+      "chapter": "Iter 7 Probe(観点23)",
+      "t": "",
+      "who": "play",
+      "kind": "confirmed",
+      "text": "H-20261021-02、Confirmed! 今日2本目の仮説的中です。",
+      "src": "thinking-log.md › Iter 7 › 📊",
+      "headline": "日付の計算は端末まかせ説が的中",
+      "refs": [
+        "H-20261021-02",
+        "P-20261021-02"
+      ]
+    },
+    {
+      "chapter": "Iter 8 回帰確認",
+      "t": "01:00",
+      "who": "play",
+      "kind": "viewpoint",
+      "text": "最後は既知バグの回帰確認。観点02 / 06 / 09 / 23。",
+      "src": "thinking-log.md › Iter 8"
+    },
+    {
+      "chapter": "Iter 8 回帰確認",
+      "t": "",
+      "who": "color",
+      "text": "半年ぶりで実装が変わっているので、古いバグが今も起きるのかの棚卸しです。テストは「直っていればこうなる」で書き、落ちたら未修正とみなす。データの改ざんが要るものはここでも外しています。",
+      "src": "thinking-log.md › Iter 8 › 🎯🔬"
+    },
+    {
+      "chapter": "Iter 8 回帰確認",
+      "t": "",
+      "who": "play",
+      "text": "結果、空白だけの氏名が通る件と、1000文字入れるとエラー(414)になる件は未修正。0泊・0人で予約できる件と、エラーが英語で出る件は直っていた。既存のバグレポート4件に追記して終了!",
+      "src": "thinking-log.md › Iter 8 › 📊"
+    },
+    {
+      "chapter": "試合終了",
+      "t": "",
+      "who": "play",
+      "text": "試合終了! 新観点 24〜27 を消化、28 は未ログイン側まで。新規バグ4件、仮説2本を立てて2本とも Confirmed。人間へのパスは手動テスト2件と Needs-Human 3件です。",
+      "src": "session-log.md › Session #7 Summary"
+    },
+    {
+      "chapter": "試合終了",
+      "t": "",
+      "who": "color",
+      "text": "当たりはほぼ全部、最初のコード読解から出ています。予約内容を確認画面に1回だけ渡す作りと、日付の計算を端末まかせにする作り。サーバーが無くても、予約内容がブラウザのどこに置かれ、いつ消えるかを先に押さえればバグは出る、と AI 自身がまとめています。",
+      "src": "thinking-log.md › セッション総括 (#7)"
+    },
+    {
+      "chapter": "試合終了",
+      "t": "",
+      "who": "color",
+      "text": "自分のテストの誤りは2回。見出しだけ見て表示できたと思った偽陽性と、自分で止めた画面を待ち続けたクリック。どちらも最初の異常まで遡って特定できていた。AI のテスト結果をどこまで信じていいか、を見るならこの2場面です。",
+      "src": "thinking-log.md › セッション総括 (#7)"
+    },
+    {
+      "chapter": "試合終了",
+      "t": "",
+      "who": "play",
+      "text": "次回への申し送り。最優先は MT-20261021-02 の結果。普段のブラウザで「戻る」しても入力が残るなら、過去の起票3件はテスト用ブラウザだけの現象として見直します。以上、AIテスト実況でした!",
+      "src": "session-log.md › 次セッションへの申し送り"
+    }
+  ]
+}
+  </script>
+
+  <script>
+  (() => {
+    const data = JSON.parse(document.getElementById('commentary-data').textContent);
+    const lines = data.lines || [];
+    const WHO = { play: '実況', color: '解説' };
+    const TAG = { viewpoint: '観点', bug: 'バグ発見', misplay: 'テストの誤り', hypothesis: '仮説', confirmed: '仮説的中', rejected: '仮説外れ', handoff: '人間へパス' };
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const $ = id => document.getElementById(id);
+    const feed = $('feed');
+    let idx = 0, playing = false, speed = 1, timer = null, typing = null, stopAt = -1;
+
+    // ヘッダー
+    document.title = data.title || 'AIテスト実況';
+    $('title').textContent = data.title || 'AIテスト実況';
+    const live = data.status === 'live';
+    $('onair').textContent = live ? 'LIVE' : 'REPLAY';
+    $('onair').classList.toggle('live', live);
+    $('meta').textContent = [data.target, data.session && `Session ${data.session}`, data.date, data.intent && `intent: ${data.intent}`,
+      live && data.liveUpTo && `${data.liveUpTo} まで実況済み`].filter(Boolean).join('  |  ');
+
+    // チャプター
+    const chapters = [];
+    lines.forEach((l, i) => { if (!chapters.length || chapters[chapters.length - 1].name !== l.chapter) chapters.push({ name: l.chapter, start: i }); });
+    chapters.forEach((c, ci) => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = c.name; b.dataset.ci = ci;
+      b.onclick = () => jumpTo(c.start);
+      $('chapters').appendChild(b);
+    });
+
+    // 本文: `code` だけ装飾する(HTML は解釈しない)
+    function fill(el, text) {
+      el.textContent = '';
+      text.split(/(`[^`]+`)/).forEach(part => {
+        if (/^`[^`]+`$/.test(part)) { const c = document.createElement('code'); c.textContent = part.slice(1, -1); el.appendChild(c); }
+        else el.appendChild(document.createTextNode(part));
+      });
+    }
+
+    function score(upto) {
+      const n = { viewpoint: 0, bug: 0, hypothesis: 0, confirmed: 0, misplay: 0, handoff: 0 };
+      for (let i = 0; i < upto; i++) if (lines[i].kind in n) n[lines[i].kind]++;
+      return n;
+    }
+    function setStat(id, value, bump) {
+      const el = $(id), num = el.querySelector('.n');
+      if (num.textContent !== String(value)) {
+        num.textContent = value;
+        if (bump) { el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 600); }
+      }
+    }
+    function updateBoard(bump) {
+      const n = score(idx);
+      setStat('s-viewpoint', n.viewpoint, bump);
+      setStat('s-bug', n.bug, bump);
+      setStat('s-hypo', `${n.hypothesis}/${n.confirmed}`, bump);
+      setStat('s-misplay', n.misplay, bump);
+      setStat('s-handoff', n.handoff, bump);
+      const lastT = lines.slice(0, idx).reverse().find(l => l.t);
+      $('clock').textContent = lastT ? lastT.t : '--:--';
+      $('bar').style.width = lines.length ? `${idx / lines.length * 100}%` : '0';
+      $('count').textContent = `${idx} / ${lines.length}`;
+      const curChapter = chapters.reduce((a, c, ci) => (c.start < Math.max(idx, 1) ? ci : a), 0);
+      document.querySelectorAll('.chip').forEach((b, ci) => {
+        b.classList.toggle('done', chapters[ci].start < idx);
+        b.classList.toggle('now', ci === curChapter && idx > 0);
+      });
+      const now = document.querySelector('.chip.now');
+      if (now) $('chapters').scrollLeft = now.offsetLeft - $('chapters').offsetLeft - 16;
+    }
+
+    const toBottom = smooth => scrollTo({ top: document.documentElement.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+
+    function render(i, animate) {
+      const l = lines[i];
+      if (i === 0 || lines[i - 1].chapter !== l.chapter) {
+        const h = document.createElement('div');
+        h.className = 'chapter-title'; h.textContent = l.chapter;
+        feed.appendChild(h);
+      }
+      const m = document.createElement('div');
+      m.className = `msg ${l.who === 'color' ? 'color' : 'play'}${l.kind ? ' k-' + l.kind : ''}${i === stopAt ? ' focus' : ''}`;
+      m.innerHTML = '<div class="who"></div><div class="bubble"><div class="name"></div><div class="text"></div></div>';
+      m.querySelector('.who').textContent = WHO[l.who] || '実況';
+      const name = m.querySelector('.name');
+      name.append(`${WHO[l.who] || '実況'}${l.t ? ' · ' + l.t : ''}`);
+      if (l.kind && TAG[l.kind]) { const t = document.createElement('span'); t.className = `tag ${l.kind}`; t.textContent = TAG[l.kind]; name.append(t); }
+      const bubble = m.querySelector('.bubble');
+      const textEl = m.querySelector('.text');
+      const tail = () => {
+        if (l.img) { const img = document.createElement('img'); img.src = l.img; img.alt = l.imgAlt || ''; img.loading = 'lazy'; bubble.appendChild(img); }
+        if (l.src) { const s = document.createElement('div'); s.className = 'src'; s.textContent = `出典: ${l.src}`; bubble.appendChild(s); }
+      };
+      feed.appendChild(m);
+      const complete = () => { textEl.classList.remove('caret'); fill(textEl, l.text); tail(); typing = null; };
+      if (!animate || reduceMotion) { complete(); return Promise.resolve(); }
+      return new Promise(resolve => {
+        let k = 0;
+        textEl.classList.add('caret');
+        const step = () => {
+          k += Math.max(1, Math.round(speed));
+          textEl.textContent = l.text.slice(0, k);
+          toBottom(true);
+          if (k < l.text.length) typing = { id: setTimeout(step, 28), complete };
+          else { complete(); toBottom(true); resolve(); }
+        };
+        step();
+      });
+    }
+
+    async function advance() {
+      if (idx >= lines.length) { stop(); return; }
+      const i = idx++;
+      updateBoard(true);
+      await render(i, true);
+      if (i === stopAt) { stopAt = -1; stop(); return; }
+      if (playing) {
+        const pause = (lines[i].kind === 'bug' || lines[i].kind === 'misplay' ? 2200 : 1300) / speed;
+        timer = setTimeout(advance, pause);
+      }
+    }
+    function play() {
+      if (idx >= lines.length) jumpTo(0);
+      playing = true; $('btn-play').textContent = '⏸ 一時停止';
+      if (!typing) advance();
+    }
+    function stop() {
+      playing = false; clearTimeout(timer);
+      $('btn-play').textContent = idx >= lines.length ? '↺ 最初から' : '▶ 再生';
+    }
+    // 打ちかけの行を即座に全文表示する。advance() の Promise はあえて解決しない
+    // (解決すると、停止後に再生し直したとき次の行の予約が二重になるため)
+    function finishTyping() {
+      if (!typing) return;
+      clearTimeout(typing.id);
+      typing.complete();
+    }
+    function jumpTo(target) {
+      stop(); finishTyping();
+      stopAt = -1;
+      feed.textContent = '';
+      idx = Math.min(target, lines.length);
+      for (let i = 0; i < idx; i++) render(i, false);
+      updateBoard(false);
+      toBottom(false);
+      stop();
+    }
+
+    $('btn-play').onclick = () => (playing ? stop() : play());
+    $('btn-next').onclick = () => {
+      stop();
+      if (typing) { finishTyping(); return; }
+      if (idx < lines.length) { idx++; updateBoard(true); render(idx - 1, false); toBottom(true); }
+      stop();
+    };
+    $('btn-all').onclick = () => jumpTo(lines.length);
+    $('btn-speed').onclick = () => { speed = speed === 4 ? 1 : speed * 2; $('btn-speed').textContent = `${speed}x`; };
+    document.addEventListener('keydown', e => {
+      if (e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+      if (e.key === ' ') { e.preventDefault(); $('btn-play').click(); }
+      if (e.key === 'ArrowRight') $('btn-next').click();
+    });
+
+    // 場面への頭出し(#F-20261021-05 / #misplay-2 / #iter-4)。レポートからのリンク用。
+    // 目当ての行だけを見せず、その Iter の頭から再生する: 結論の前に「なぜ」を通らせるため
+    function seek(hash) {
+      const key = decodeURIComponent(hash.replace(/^#/, ''));
+      if (!key) return;
+      let target = -1, from = -1;
+      const iter = key.match(/^iter-(\d+)$/i);
+      const nth = key.match(/^([a-z]+)-(\d+)$/);
+      if (iter) {
+        from = chapters.find(c => new RegExp(`^Iter\\s*${iter[1]}(\\D|$)`).test(c.name))?.start ?? -1;
+      } else if (/^(F|H|P|MT)-/.test(key)) {
+        target = lines.findIndex(l => (l.refs || []).includes(key));
+      } else if (nth && nth[1] in TAG) {
+        target = lines.map((l, i) => (l.kind === nth[1] ? i : -1)).filter(i => i >= 0)[Number(nth[2]) - 1] ?? -1;
+      }
+      if (target >= 0) from = chapters.filter(c => c.start <= target).pop().start;
+      if (from < 0) {
+        jumpTo(0);
+        const n = document.createElement('div');
+        n.className = 'notice'; n.textContent = `「${key}」の場面はこの実況に見つかりませんでした。▶ で最初から再生できます。`;
+        feed.appendChild(n);
+        return;
+      }
+      jumpTo(from);
+      stopAt = target;
+      play();
+    }
+    addEventListener('hashchange', () => seek(location.hash));
+
+    updateBoard(false);
+    seek(location.hash);
+  })();
+  </script>
+</body>
+</html>

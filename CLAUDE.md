@@ -14,6 +14,8 @@ Webアプリを「28観点リスト」に沿って自律的に探索テストす
   手順は `.claude/agents/qa-explorer-android.md`、準備とコマンドは `docs/android-setup.md`、設計の経緯は `docs/android-support-plan.md`
 - `/run-cases` — テストケース駆動実行モード。手順は `.github/agents/qa-runner.agent.md`
 - `/qa-explorer-report` — 結果を1枚のHTMLレポートに集約
+- `/commentary` — 探索セッションの記録を、実況と解説の掛け合いで再生できる HTML にする(テストはしない)。
+  手順は `.claude/agents/qa-commentator.md`
 
 ## 知識ソースの優先順位
 

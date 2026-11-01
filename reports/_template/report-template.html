@@ -38,6 +38,36 @@
     .insight-box p { font-size: 14px; color: #2d3748; line-height: 1.8; }
     .insight-box .weak { color: #c53030; font-weight: 600; }
 
+    /* ===== 追体験(AIテスト実況へのリンク) ===== */
+    .replay { border: 1px solid #2d3748; border-radius: 8px; overflow: hidden; margin: 12px 0 8px; }
+    .replay-head { background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .replay-head .who { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; color: #a0aec0; }
+    .replay-head .replay-title { font-size: 15px; font-weight: 700; }
+    .replay-play { margin-left: auto; background: #3182ce; color: #fff; border-radius: 6px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .replay-play:hover { background: #2b6cb0; }
+    .replay-body { padding: 12px 20px 14px; background: #fff; }
+    .replay-body .sub { font-size: 11px; color: #a0aec0; margin: 2px 0 4px; }
+    details.moments-box summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #4a5568; list-style: none; display: flex; align-items: center; gap: 8px; }
+    details.moments-box summary::-webkit-details-marker { display: none; }
+    details.moments-box summary::before { content: "▶"; font-size: 10px; color: #a0aec0; transition: transform 0.15s; }
+    details.moments-box[open] summary::before { transform: rotate(90deg); }
+    details.moments-box summary .m-count { font-weight: 400; color: #a0aec0; font-size: 12px; }
+    .moments { list-style: none; }
+    .moments li { border-top: 1px solid #edf2f7; }
+    .moments li:first-child { border-top: none; }
+    .moments a { display: flex; align-items: center; gap: 10px; padding: 7px 0; color: #2d3748; text-decoration: none; font-size: 13px; }
+    .moments a:hover { color: #2b6cb0; }
+    .moments a::after { content: "▶"; margin-left: auto; font-size: 10px; color: #a0aec0; }
+    .moments .m-iter { width: 52px; flex-shrink: 0; font-size: 11px; color: #a0aec0; font-variant-numeric: tabular-nums; }
+    .m-tag { flex-shrink: 0; border-radius: 4px; font-size: 10px; font-weight: 700; padding: 1px 7px; color: #fff; }
+    .m-tag.bug { background: #e53e3e; } .m-tag.misplay { background: #805ad5; }
+    .m-tag.hypothesis, .m-tag.confirmed, .m-tag.rejected { background: #319795; }
+    .m-tag.handoff { background: #d69e2e; }
+    .replay-past { font-size: 12px; color: #718096; margin-top: 8px; }
+    .replay-past a { color: #2b6cb0; }
+    .moment-link { display: inline-block; font-size: 11px; font-weight: 600; color: #3182ce; text-decoration: none; margin-top: 4px; }
+    .moment-link:hover { text-decoration: underline; }
+
     /* ===== B. 検出バグ ===== */
     .bug-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
     .bug-table th { background: #edf2f7; font-size: 12px; font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid #cbd5e0; color: #4a5568; }
@@ -129,6 +159,8 @@
       body { background: #fff; font-size: 12px; }
       .card, .hypo-card { page-break-inside: avoid; border: 1px solid #ccc; }
       details.test-card summary::before { display: none; }
+      .moment-link, .moments-box { display: none; }
+      .replay-play::after { content: " (" attr(href) ")"; font-weight: 400; font-size: 10px; }
     }
   </style>
 </head>
@@ -139,6 +171,8 @@
   各セクションにサンプルデータを1件ずつ入れてある。生成時はこのファイルをベースに
   データ部分を差し替え、対象ごとに .card を繰り返す。
   バグへのリンクはプロジェクトルートからの相対パス (reports/<slug>/bugs/*.md)。
+  「▶」のリンクは AIテスト実況 (reports/<slug>/commentary/session-NN.html) の場面への頭出し。
+  実況の台本にその ID / kind が無いときはリンクを出さない (リンク切れを作らない)。
   レポートはプロジェクトルートに保存するので、そのままブラウザ/エディタで開ける。
 -->
 
@@ -167,6 +201,28 @@
       <p>このサイトの弱点は<span class="weak">「入力値の保持と復元」</span>に集中しています。…(Confirmed な仮説の Statement/Notes を素材に、3〜5行で「どこが弱いか・何が堅牢だったか・次に人手で見るべきこと」を書く)</p>
     </div>
 
+    <!-- ===== 追体験 (AIテスト実況へのリンク。実況が無い対象では出さない) ===== -->
+    <div class="replay">
+      <div class="replay-head">
+        <div>
+          <div class="who">このセッションを追体験する</div>
+          <div class="replay-title">Session #N(YYYY-MM-DD)— AI が何を考え、どうテストしたか</div>
+        </div>
+        <a class="replay-play" href="reports/target-slug/commentary/session-NN.html">▶ 最初から見る</a>
+      </div>
+      <div class="replay-body">
+        <details class="moments-box">
+          <summary>見どころ <span class="m-count">2件 — バグ発見・テストの誤り・仮説・人間へのパス</span></summary>
+          <div class="sub">押すとその Iter の頭から再生し、この場面で止まる</div>
+          <ol class="moments">
+          <li><a href="reports/target-slug/commentary/session-NN.html#misplay-1"><span class="m-iter">Iter 1</span><span class="m-tag misplay">テストの誤り</span>台本の headline</a></li>
+          <li><a href="reports/target-slug/commentary/session-NN.html#bug-1"><span class="m-iter">Iter 3</span><span class="m-tag bug">バグ発見</span>台本の headline</a></li>
+          </ol>
+        </details>
+        <div class="replay-past">過去の実況: <a href="reports/target-slug/commentary/session-NN.html">Session #N</a></div>
+      </div>
+    </div>
+
     <!-- ===== B. 検出バグ一覧 (独立セクション・レポートへのリンク付き) ===== -->
     <div class="section-title">検出バグ一覧(N件)</div>
     <table class="bug-table">
@@ -176,7 +232,8 @@
           <td class="finding-id">F-YYYYMMDD-NN</td>
           <td>
             <div class="bug-title"><a href="reports/target-slug/bugs/YYYY-MM-DD-viewpoint-NN-slug.md">予約完了後に二重予約が可能</a></div>
-            <span class="viewpoint-tag">観点19 登録と参照</span>
+            <span class="viewpoint-tag">観点19 登録と参照</span><br>
+            <a class="moment-link" href="reports/target-slug/commentary/session-NN.html#F-YYYYMMDD-NN">▶ 発見の瞬間を見る</a>
           </td>
           <td><span class="badge high">High</span></td>
           <td class="summary">
@@ -198,6 +255,7 @@
         <span class="hypo-id">H-YYYYMMDD-NN</span>
         <span class="hypo-status confirmed">Confirmed</span>
         <span class="stmt">仮説の短いタイトル</span>
+        <a class="moment-link" href="reports/target-slug/commentary/session-NN.html#H-YYYYMMDD-NN">▶ 仮説が立った瞬間を見る</a>
       </div>
       <ul class="flow">
         <li class="f"><span class="step">発見(根拠)</span>Born from の Finding を「F-ID: 事実」形式で列挙し、共通する匂いを1行で。</li>
@@ -234,6 +292,7 @@
           <div><div class="field-label">テスト意図</div><div class="field-value">…</div></div>
           <div><div class="field-label">結果</div><div class="field-value">…</div></div>
           <div class="full-width"><div class="field-label">主要手順</div><div class="field-value"><ul><li>…</li></ul></div></div>
+          <div class="full-width"><a class="moment-link" href="reports/target-slug/commentary/session-NN.html#iter-N">▶ この Iter を実況で見る</a></div>
         </div>
       </details>
     </div>
