@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIテスト実況</title>
+  <!--
+    QA Explorer のテスト実況プレイヤー。
+    データは id="commentary-data" の JSON ブロックだけを差し替える。
+    (このコメントにタグそのものを書かないこと。文字列置換で先にこちらへ当たるため)
+    書式は .claude/agents/qa-commentator.md の「台本の書式」を参照。
+  -->
+  <style>
+    :root {
+      --bg: #f4f5f8; --panel: #ffffff; --ink: #1f2430; --sub: #687083; --line: #e3e6ee;
+      --board-bg: #141822; --board-ink: #f2f4f8; --board-sub: #98a2b8;
+      --play: #2563eb; --play-bg: #eef3ff;
+      --color: #b45309; --color-bg: #fff6e8;
+      --bug: #dc2626; --misplay: #7c3aed; --hypo: #0f766e; --hand: #ca8a04; --vp: #2563eb;
+      --live: #ef4444;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0e1118; --panel: #171b25; --ink: #e6e9f0; --sub: #9aa3b5; --line: #2a3040;
+        --board-bg: #0a0d13; --play: #7aa2ff; --play-bg: #1a2338; --color: #f0a74a; --color-bg: #2b2215;
+        --bug: #f87171; --misplay: #a78bfa; --hypo: #2dd4bf; --hand: #facc15; --vp: #7aa2ff;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0e1118; --panel: #171b25; --ink: #e6e9f0; --sub: #9aa3b5; --line: #2a3040;
+      --board-bg: #0a0d13; --play: #7aa2ff; --play-bg: #1a2338; --color: #f0a74a; --color-bg: #2b2215;
+      --bug: #f87171; --misplay: #a78bfa; --hypo: #2dd4bf; --hand: #facc15; --vp: #7aa2ff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
+      background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ===== スコアボード ===== */
+    .board { background: var(--board-bg); color: var(--board-ink); padding: 14px 16px 12px; position: sticky; top: 0; z-index: 2; }
+    .board-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 960px; margin: 0 auto; }
+    .onair { font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 2px 8px; border-radius: 4px; background: #334155; }
+    .onair.live { background: var(--live); animation: blink 1.6s infinite; }
+    @keyframes blink { 50% { opacity: .55; } }
+    .board h1 { font-size: 16px; font-weight: 700; }
+    .board .meta { font-size: 12px; color: var(--board-sub); width: 100%; max-width: 960px; margin: 2px auto 0; overflow-wrap: anywhere; }
+    .clock { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 20px; font-weight: 700; letter-spacing: .04em; }
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 960px; margin: 10px auto 0; }
+    .stat { background: rgba(255,255,255,.06); border-radius: 8px; padding: 6px 4px; text-align: center; transition: background .3s; }
+    .stat.pop { background: rgba(255,255,255,.22); }
+    .stat .n { font-size: 22px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat .l { font-size: 11px; color: var(--board-sub); }
+    .stat.bug .n { color: #fca5a5; } .stat.misplay .n { color: #c4b5fd; }
+    .stat.hypo .n { color: #5eead4; } .stat.hand .n { color: #fde68a; }
+
+    /* ===== チャプター ===== */
+    .chapters { display: flex; gap: 6px; overflow-x: auto; max-width: 960px; margin: 10px auto 0; scrollbar-width: none; }
+    .chapters::-webkit-scrollbar { display: none; }
+    .chip { flex: none; border: 1px solid rgba(255,255,255,.18); background: transparent; color: var(--board-sub); border-radius: 999px; padding: 2px 12px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .chip.done { color: var(--board-ink); }
+    .chip.now { border-color: var(--board-ink); background: var(--board-ink); color: var(--board-bg); font-weight: 700; }
+
+    /* ===== 実況フィード ===== */
+    .feed { width: 100%; max-width: 992px; margin: 0 auto; padding: 4px 16px 96px; }
+    .chapter-title { margin: 22px 0 10px; font-size: 13px; font-weight: 700; color: var(--sub); display: flex; align-items: center; gap: 10px; }
+    .chapter-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+    .msg { display: flex; gap: 10px; margin: 10px 0; animation: rise .25s ease-out; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+    .msg.color { flex-direction: row-reverse; }
+    .who { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; }
+    .msg.play .who { background: var(--play); }
+    .msg.color .who { background: var(--color); }
+    .bubble { max-width: min(640px, 82%); background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 9px 14px 8px; }
+    .msg.play .bubble { border-top-left-radius: 4px; background: var(--play-bg); }
+    .msg.color .bubble { border-top-right-radius: 4px; background: var(--color-bg); }
+    .bubble .name { font-size: 11px; font-weight: 700; color: var(--sub); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .bubble .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .bubble code { font-family: ui-monospace, Menlo, monospace; font-size: .88em; background: rgba(127,127,127,.15); border-radius: 4px; padding: 0 4px; }
+    .bubble .src { font-size: 11px; color: var(--sub); margin-top: 4px; }
+    .bubble img { display: block; max-width: 100%; max-height: 360px; margin-top: 8px; border-radius: 8px; border: 1px solid var(--line); }
+    .tag { font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 1px 7px; border-radius: 4px; color: #fff; }
+    .tag.bug { background: var(--bug); } .tag.misplay { background: var(--misplay); }
+    .tag.hypothesis, .tag.confirmed, .tag.rejected { background: var(--hypo); }
+    .tag.handoff { background: var(--hand); color: #1f2430; } .tag.viewpoint { background: var(--vp); }
+    .msg.k-bug .bubble { box-shadow: 0 0 0 2px var(--bug); }
+    .msg.k-misplay .bubble { box-shadow: 0 0 0 2px var(--misplay); }
+    .msg.focus .bubble { box-shadow: 0 0 0 3px var(--hand); animation: focus 1.2s ease-out 2; }
+    @keyframes focus { 0% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 3px var(--hand); } }
+    .notice { margin: 16px 0; font-size: 13px; color: var(--sub); text-align: center; }
+    .caret::after { content: "▍"; animation: blink 1s infinite; color: var(--sub); }
+
+    /* ===== 操作バー ===== */
+    .controls { position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); z-index: 3; }
+    .controls-in { max-width: 960px; margin: 0 auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .controls button { flex: none; white-space: nowrap; font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+    .controls button.primary { background: var(--play); border-color: var(--play); color: #fff; font-weight: 700; min-width: 92px; }
+    #btn-speed { min-width: 48px; font-variant-numeric: tabular-nums; }
+    .progress { flex: 1; min-width: 120px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+    .progress div { height: 100%; width: 0; background: var(--play); transition: width .3s; }
+    .count { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
+    @media (max-width: 560px) {
+      .board { padding: 10px 16px; }
+      .board h1 { font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .board .meta { display: none; }
+      .stats { gap: 4px; margin-top: 8px; }
+      .stat { padding: 4px 2px; }
+      .stat .n { font-size: 17px; } .stat .l { font-size: 9px; line-height: 1.3; }
+      .clock { font-size: 15px; }
+      .controls-in { flex-wrap: nowrap; gap: 6px; }
+      .controls button { padding: 6px 9px; }
+      .controls button.primary { min-width: 0; }
+      .count { display: none; }
+      .bubble { max-width: 86%; }
+      .who { width: 32px; height: 32px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="board">
+    <div class="board-top">
+      <span class="onair" id="onair">REPLAY</span>
+      <h1 id="title">AIテスト実況</h1>
+      <span class="clock" id="clock">--:--</span>
+    </div>
+    <div class="meta" id="meta"></div>
+    <div class="stats">
+      <div class="stat" id="s-viewpoint"><div class="n">0</div><div class="l">観点・Probe</div></div>
+      <div class="stat bug" id="s-bug"><div class="n">0</div><div class="l">新規バグ</div></div>
+      <div class="stat hypo" id="s-hypo"><div class="n">0</div><div class="l">仮説 立/的中</div></div>
+      <div class="stat misplay" id="s-misplay"><div class="n">0</div><div class="l">自己修正</div></div>
+      <div class="stat hand" id="s-handoff"><div class="n">0</div><div class="l">人間へパス</div></div>
+    </div>
+    <nav class="chapters" id="chapters" aria-label="チャプター"></nav>
+  </header>
+
+  <main class="feed" id="feed" aria-live="polite"></main>
+
+  <div class="controls">
+    <div class="controls-in">
+      <button class="primary" id="btn-play">▶ 再生</button>
+      <button id="btn-next" title="次のコメントへ(→キー)">⏭ 次へ</button>
+      <button id="btn-speed" title="再生速度">1x</button>
+      <button id="btn-all">全部表示</button>
+      <div class="progress"><div id="bar"></div></div>
+      <span class="count" id="count">0 / 0</span>
+    </div>
+  </div>
+
+  <script type="application/json" id="commentary-data">
+{
+  "title": "AIテスト実況(サンプル)",
+  "target": "https://example.com/",
+  "session": "#1",
+  "date": "2026-01-01",
+  "intent": "広く浅く",
+  "status": "final",
+  "lines": [
+    { "chapter": "キックオフ", "t": "10:00", "who": "play", "text": "さあ始まりました、AIテスト実況。対象は example.com です。", "src": "session-log.md › Session #1" },
+    { "chapter": "キックオフ", "t": "10:00", "who": "color", "text": "intent は「広く浅く」。まずは P0 の観点から入るはずです。", "src": "session-log.md › 計画" },
+    { "chapter": "Iter 1 観点02", "t": "10:05", "who": "play", "kind": "viewpoint", "text": "最初の一手は観点02、必須項目。", "src": "thinking-log.md › Iter 1" },
+    { "chapter": "Iter 1 観点02", "t": "10:12", "who": "play", "kind": "bug", "text": "空白だけの氏名が通った! 起票です。", "src": "thinking-log.md › Iter 1" }
+  ]
+}
+  </script>
+
+  <script>
+  (() => {
+    const data = JSON.parse(document.getElementById('commentary-data').textContent);
+    const lines = data.lines || [];
+    const WHO = { play: '実況', color: '解説' };
+    const TAG = { viewpoint: '観点', bug: 'バグ発見', misplay: 'テストの誤り', hypothesis: '仮説', confirmed: '仮説的中', rejected: '仮説外れ', handoff: '人間へパス' };
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const $ = id => document.getElementById(id);
+    const feed = $('feed');
+    let idx = 0, playing = false, speed = 1, timer = null, typing = null, stopAt = -1;
+
+    // ヘッダー
+    document.title = data.title || 'AIテスト実況';
+    $('title').textContent = data.title || 'AIテスト実況';
+    const live = data.status === 'live';
+    $('onair').textContent = live ? 'LIVE' : 'REPLAY';
+    $('onair').classList.toggle('live', live);
+    $('meta').textContent = [data.target, data.session && `Session ${data.session}`, data.date, data.intent && `intent: ${data.intent}`,
+      live && data.liveUpTo && `${data.liveUpTo} まで実況済み`].filter(Boolean).join('  |  ');
+
+    // チャプター
+    const chapters = [];
+    lines.forEach((l, i) => { if (!chapters.length || chapters[chapters.length - 1].name !== l.chapter) chapters.push({ name: l.chapter, start: i }); });
+    chapters.forEach((c, ci) => {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = c.name; b.dataset.ci = ci;
+      b.onclick = () => jumpTo(c.start);
+      $('chapters').appendChild(b);
+    });
+
+    // 本文: `code` だけ装飾する(HTML は解釈しない)
+    function fill(el, text) {
+      el.textContent = '';
+      text.split(/(`[^`]+`)/).forEach(part => {
+        if (/^`[^`]+`$/.test(part)) { const c = document.createElement('code'); c.textContent = part.slice(1, -1); el.appendChild(c); }
+        else el.appendChild(document.createTextNode(part));
+      });
+    }
+
+    function score(upto) {
+      const n = { viewpoint: 0, bug: 0, hypothesis: 0, confirmed: 0, misplay: 0, handoff: 0 };
+      for (let i = 0; i < upto; i++) if (lines[i].kind in n) n[lines[i].kind]++;
+      return n;
+    }
+    function setStat(id, value, bump) {
+      const el = $(id), num = el.querySelector('.n');
+      if (num.textContent !== String(value)) {
+        num.textContent = value;
+        if (bump) { el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 600); }
+      }
+    }
+    function updateBoard(bump) {
+      const n = score(idx);
+      setStat('s-viewpoint', n.viewpoint, bump);
+      setStat('s-bug', n.bug, bump);
+      setStat('s-hypo', `${n.hypothesis}/${n.confirmed}`, bump);
+      setStat('s-misplay', n.misplay, bump);
+      setStat('s-handoff', n.handoff, bump);
+      const lastT = lines.slice(0, idx).reverse().find(l => l.t);
+      $('clock').textContent = lastT ? lastT.t : '--:--';
+      $('bar').style.width = lines.length ? `${idx / lines.length * 100}%` : '0';
+      $('count').textContent = `${idx} / ${lines.length}`;
+      const curChapter = chapters.reduce((a, c, ci) => (c.start < Math.max(idx, 1) ? ci : a), 0);
+      document.querySelectorAll('.chip').forEach((b, ci) => {
+        b.classList.toggle('done', chapters[ci].start < idx);
+        b.classList.toggle('now', ci === curChapter && idx > 0);
+      });
+      const now = document.querySelector('.chip.now');
+      if (now) $('chapters').scrollLeft = now.offsetLeft - $('chapters').offsetLeft - 16;
+    }
+
+    const toBottom = smooth => scrollTo({ top: document.documentElement.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+
+    function render(i, animate) {
+      const l = lines[i];
+      if (i === 0 || lines[i - 1].chapter !== l.chapter) {
+        const h = document.createElement('div');
+        h.className = 'chapter-title'; h.textContent = l.chapter;
+        feed.appendChild(h);
+      }
+      const m = document.createElement('div');
+      m.className = `msg ${l.who === 'color' ? 'color' : 'play'}${l.kind ? ' k-' + l.kind : ''}${i === stopAt ? ' focus' : ''}`;
+      m.innerHTML = '<div class="who"></div><div class="bubble"><div class="name"></div><div class="text"></div></div>';
+      m.querySelector('.who').textContent = WHO[l.who] || '実況';
+      const name = m.querySelector('.name');
+      name.append(`${WHO[l.who] || '実況'}${l.t ? ' · ' + l.t : ''}`);
+      if (l.kind && TAG[l.kind]) { const t = document.createElement('span'); t.className = `tag ${l.kind}`; t.textContent = TAG[l.kind]; name.append(t); }
+      const bubble = m.querySelector('.bubble');
+      const textEl = m.querySelector('.text');
+      const tail = () => {
+        if (l.img) { const img = document.createElement('img'); img.src = l.img; img.alt = l.imgAlt || ''; img.loading = 'lazy'; bubble.appendChild(img); }
+        if (l.src) { const s = document.createElement('div'); s.className = 'src'; s.textContent = `出典: ${l.src}`; bubble.appendChild(s); }
+      };
+      feed.appendChild(m);
+      const complete = () => { textEl.classList.remove('caret'); fill(textEl, l.text); tail(); typing = null; };
+      if (!animate || reduceMotion) { complete(); return Promise.resolve(); }
+      return new Promise(resolve => {
+        let k = 0;
+        textEl.classList.add('caret');
+        const step = () => {
+          k += Math.max(1, Math.round(speed));
+          textEl.textContent = l.text.slice(0, k);
+          toBottom(true);
+          if (k < l.text.length) typing = { id: setTimeout(step, 28), complete };
+          else { complete(); toBottom(true); resolve(); }
+        };
+        step();
+      });
+    }
+
+    async function advance() {
+      if (idx >= lines.length) { stop(); return; }
+      const i = idx++;
+      updateBoard(true);
+      await render(i, true);
+      if (i === stopAt) { stopAt = -1; stop(); return; }
+      if (playing) {
+        const pause = (lines[i].kind === 'bug' || lines[i].kind === 'misplay' ? 2200 : 1300) / speed;
+        timer = setTimeout(advance, pause);
+      }
+    }
+    function play() {
+      if (idx >= lines.length) jumpTo(0);
+      playing = true; $('btn-play').textContent = '⏸ 一時停止';
+      if (!typing) advance();
+    }
+    function stop() {
+      playing = false; clearTimeout(timer);
+      $('btn-play').textContent = idx >= lines.length ? '↺ 最初から' : '▶ 再生';
+    }
+    // 打ちかけの行を即座に全文表示する。advance() の Promise はあえて解決しない
+    // (解決すると、停止後に再生し直したとき次の行の予約が二重になるため)
+    function finishTyping() {
+      if (!typing) return;
+      clearTimeout(typing.id);
+      typing.complete();
+    }
+    function jumpTo(target) {
+      stop(); finishTyping();
+      stopAt = -1;
+      feed.textContent = '';
+      idx = Math.min(target, lines.length);
+      for (let i = 0; i < idx; i++) render(i, false);
+      updateBoard(false);
+      toBottom(false);
+      stop();
+    }
+
+    $('btn-play').onclick = () => (playing ? stop() : play());
+    $('btn-next').onclick = () => {
+      stop();
+      if (typing) { finishTyping(); return; }
+      if (idx < lines.length) { idx++; updateBoard(true); render(idx - 1, false); toBottom(true); }
+      stop();
+    };
+    $('btn-all').onclick = () => jumpTo(lines.length);
+    $('btn-speed').onclick = () => { speed = speed === 4 ? 1 : speed * 2; $('btn-speed').textContent = `${speed}x`; };
+    document.addEventListener('keydown', e => {
+      if (e.target.closest('button') && (e.key === ' ' || e.key === 'Enter')) return;
+      if (e.key === ' ') { e.preventDefault(); $('btn-play').click(); }
+      if (e.key === 'ArrowRight') $('btn-next').click();
+    });
+
+    // 場面への頭出し(#F-20261021-05 / #misplay-2 / #iter-4)。レポートからのリンク用。
+    // 目当ての行だけを見せず、その Iter の頭から再生する: 結論の前に「なぜ」を通らせるため
+    function seek(hash) {
+      const key = decodeURIComponent(hash.replace(/^#/, ''));
+      if (!key) return;
+      let target = -1, from = -1;
+      const iter = key.match(/^iter-(\d+)$/i);
+      const nth = key.match(/^([a-z]+)-(\d+)$/);
+      if (iter) {
+        from = chapters.find(c => new RegExp(`^Iter\\s*${iter[1]}(\\D|$)`).test(c.name))?.start ?? -1;
+      } else if (/^(F|H|P|MT)-/.test(key)) {
+        target = lines.findIndex(l => (l.refs || []).includes(key));
+      } else if (nth && nth[1] in TAG) {
+        target = lines.map((l, i) => (l.kind === nth[1] ? i : -1)).filter(i => i >= 0)[Number(nth[2]) - 1] ?? -1;
+      }
+      if (target >= 0) from = chapters.filter(c => c.start <= target).pop().start;
+      if (from < 0) {
+        jumpTo(0);
+        const n = document.createElement('div');
+        n.className = 'notice'; n.textContent = `「${key}」の場面はこの実況に見つかりませんでした。▶ で最初から再生できます。`;
+        feed.appendChild(n);
+        return;
+      }
+      jumpTo(from);
+      stopAt = target;
+      play();
+    }
+    addEventListener('hashchange', () => seek(location.hash));
+
+    updateBoard(false);
+    seek(location.hash);
+  })();
+  </script>
+</body>
+</html>

@@ -23,6 +23,8 @@ reports/
     manual-tests.md          # 手動テスト候補 (存在する場合のみ)
     bugs/
       YYYY-MM-DD-viewpoint-NN-<slug>.md
+    commentary/
+      session-NN.html        # AIテスト実況 (/commentary。台本は id="commentary-data" の JSON)
 tests/generated/
   *.spec.ts                  # Playwright spec (Web)
   android/<target-slug>/
@@ -54,7 +56,19 @@ target-slug ごとに、以下を読み取る。**ファイルが無い場合は
 | `reports/<slug>/manual-tests.md` | 手動テスト候補(MT-ID, 優先度, タイトル, ファイル内アンカー)。ファイルが無ければ「起票なし」と表示 |
 | `reports/<slug>/coverage.md` | 観点表(No, 観点, 優先度, 状態, 備考) |
 | `reports/<slug>/session-log.md` | Iteration ごとのテスト記録、次セッションへの申し送り |
+| `reports/<slug>/commentary/session-*.html` | id="commentary-data" の JSON を取り出し、`session`・`date`・`status`、`kind` 付きの行の `headline`・`refs`・`chapter` を読む(追体験カードと「▶」リンク用)。**本文(`text`)はレポートに転記しない** |
 | `tests/generated/*.spec.ts`(target-slug が `android-` で始まる対象は `tests/generated/android/<slug>/*.android.spec.ts`) | spec のコメント(/** ~ */)から「狙うバグ」「手順」を補完 |
+
+### Step 2.5: 実況を用意する
+
+レポートの目的の一つは、**AI が何を考えてどのようなテストをしたのかを、人間が追体験できること**。
+そのために、各対象の**最新セッション**に AIテスト実況があるかを確かめる。
+
+- `reports/<slug>/commentary/session-<NN>.html` が無い、または台本の `status` が `live` のまま
+  (探索が終わった後に作り直していない)なら、qa-commentator サブエージェント
+  (`.claude/agents/qa-commentator.md`)に `target=<slug> session=#N` で作らせる。対象が複数なら並行でよい
+- あるもの(`status: final`)は作り直さない。古いセッションの実況も新たには作らない(時間がかかるため)
+- 実況が作れなかった対象は、追体験カードと「▶」リンクを出さずに進める(レポート全体は止めない)
 
 ### Step 3: 「実行したテストの内容」をまとめる
 
@@ -83,18 +97,29 @@ session-log の Iteration N と spec ファイルは、観点番号 (`viewpoint-
    - **A. テスト担当者(AI)からの所見** — Confirmed な Hypothesis の Statement/Notes を素材に、
      「このサイトのどこが弱いか / 何が堅牢だったか / 次に人手で見るべきこと」を3〜5行の文章で。
      バグの羅列ではなく、テスト担当者として人間に語りかける示唆を書く(このスキルの主眼)
+   - **追体験カード** — A の直後に置く。最新セッションの実況への「▶ 最初から見る」と、
+     **見どころ**のリスト(台本の `kind` 付きの行。`viewpoint` を除く)。見どころは件数が多いと
+     レポートの大半を占めるので、`<details class="moments-box">` で**閉じた状態**で置き、summary に件数を出す。各行は
+     「Iter 番号 / kind のタグ / `headline`」で、リンクは `session-NN.html#<kind>-<n>`
+     (その kind の n 番目)。10件を超えるときは bug → misplay → confirmed/rejected → hypothesis → handoff の順に
+     残して、時系列で並べる。**バグが0件のセッションでも、自己修正・仮説・人間へのパスが見どころになる**。
+     kind 付きの行が1つも無ければ、見どころの代わりに Iter ごとの `#iter-N` リンクを並べる。
+     実況がある過去のセッションは、カードの下に「過去の実況」として小さくリンクする
    - **B. 検出バグ一覧** — **バグとして起票したものだけの独立セクション**。
      各行のタイトルは `reports/<slug>/bugs/<file>.md` への**相対リンク**にする
      (レポートはプロジェクトルート保存なので相対パスでそのまま開ける)。
      概要欄にはバグレポートから抽出した**再現手順を `<details>` で折りたたみ埋め込み**し、
-     ブラウザ内だけでも即確認できるようにする
+     ブラウザ内だけでも即確認できるようにする。
+     実況の台本にその F-ID を `refs` に持つ行があれば、観点タグの下に「▶ 発見の瞬間を見る」
+     (`session-NN.html#<F-ID>`)を付ける
    - **C. 発見 → 仮説 → 検証 → 帰結** — Hypothesis ごとに1カード。
      Confirmed はタイムライン形式(Born from の Finding → Statement → Probe Plan/Result →
      起票バグへのリンク + Notes から得た「新たな気づき」)。
      Rejected はコンパクト形式で「誤検出の原因 = テスト設計の学び」を必ず書く。
-     Open は「検証待ち」として D にも再掲する
+     Open は「検証待ち」として D にも再掲する。
+     実況の台本にその H-ID を `refs` に持つ行があれば、見出しに「▶ 仮説が立った瞬間を見る」を付ける
    - 観点カバレッジ表
-   - 実行したテストの内容(`<details>`)
+   - 実行したテストの内容(`<details>`)。実況がある Iter のカードには「▶ この Iter を実況で見る」(`#iter-N`)
    - **D. 次の一手(人とAIの分担)** — **対象セクションの最後**に置く。3行のテーブル:
      「人間に依頼」(Needs-Human: Yes の Finding を質問形式で) /
      「AIが次回検証」(Open Hypothesis・Planned Probe) /
@@ -129,6 +154,9 @@ Severity と優先度はテンプレート内のCSSクラスに対応してい�
 - **観点リスト(viewpoints.md)の書き換えや派生観点の昇格判断はしない**。
 - **テスト結果の評価コメント(良い/悪い)を勝手に追加しない**。事実(FAIL/PASS/REJECTED)だけを淡々と記載する。
 - **ファイルが見つからないときに架空のデータで埋めない**。空セクションは「起票なし」と明示する。
+- **実況へのリンクを推測で張らない**。台本の `refs`・`kind`・チャプターに実在する場面だけにリンクする
+  (無い ID へのリンクは、開くと「見つかりませんでした」になる)。
+- **実況の台本をレポート側で書き換えない**。直したいときは `/commentary` で作り直す。
 
 ## 参考ファイル
 

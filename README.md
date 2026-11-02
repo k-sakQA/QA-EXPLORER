@@ -115,6 +115,20 @@ PC に USB でつないだ Android 端末のアプリを、Web 版と同じ28観
 adb と端末の準備が別に要ります。準備の手順とコマンドの一覧は [docs/android-setup.md](docs/android-setup.md)、
 なぜこの作りにしたかは [docs/android-support-plan.md](docs/android-support-plan.md) を参照してください。
 
+**AIテスト実況(Claude Code のみ):**
+```
+/commentary [target=<target-slug>] [session=<#N | latest>]
+# 例: /commentary target=hotel-example-site-takeyaqa-dev session=#7
+```
+探索セッションの記録(thinking-log・session-log・findings・bugs)を読み、**実況**(何が起きたか)と
+**解説**(なぜそうしたか)の掛け合いにして、ゲーム実況のように再生できる HTML を
+`reports/<target-slug>/commentary/session-<NN>.html` に書き出します。どの観点を選び、何を疑い、
+どこで自分のテストの誤りに気づいたかを時系列で追えます。テストはせず記録を読むだけなので、
+探索の途中に別のセッションから実行すれば、その時点までを LIVE として実況します。
+`/qa-explorer-report` は、最新セッションの実況が無ければ作ってからリンクします。レポートの
+「追体験」カードや、バグ・仮説の「▶ 発見の瞬間を見る」から、実況のその Iter の頭に飛べます。
+例: [Session #7 の実況](reports/hotel-example-site-takeyaqa-dev/commentary/session-07.html)
+
 ### Copilot Chat での実行コマンド
 
 VS Code のチャットを **Agent モード** に切り替え、上記と同じ `/explore` / `/run-cases`
@@ -204,6 +218,7 @@ qa-explorer/
 │  ├─ explore.md                        # /explore で起動 (Claude Code)
 │  ├─ explore-android.md                # /explore-android で起動 (Claude Code・Android)
 │  ├─ run-cases.md                      # /run-cases で起動 (Claude Code)
+│  ├─ commentary.md                     # /commentary で起動 (AIテスト実況)
 │  └─ qa-explorer-report.md             # /qa-explorer-report で起動
 ├─ .github/
 │  ├─ copilot-instructions.md           # Copilot の基本原則(常時適用)
@@ -233,10 +248,12 @@ qa-explorer/
 │  └─ <target-slug>/                    # 対象ごとのレポート
 │     ├─ coverage.md                    # 観点消化状況
 │     ├─ session-log.md                 # セッションの経緯
+│     ├─ commentary/                    # AIテスト実況 (/commentary が書き出す HTML)
 │     └─ bugs/                          # GitHub Issue 形式のバグレポート
 ├─ tests/generated/                     # エージェントが生成する Playwright spec
 │  └─ android/<target-slug>/            # Android 版の Mobilewright spec (対象ごと)
 ├─ .claude/agents/qa-explorer-android.md # Android 版の探索手順 (Web 版との差分)
+├─ .claude/agents/qa-commentator.md     # AIテスト実況の手順 (記録を読むだけ)
 ├─ mobilewright.config.ts               # Android 版の spec の実行設定
 └─ scripts/
    ├─ run-android.mjs                   # Mobilewright を呼ぶ唯一の入口 (npm run test:android など)
