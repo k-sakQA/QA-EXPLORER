@@ -37,7 +37,7 @@ Mobilewright(`mobilewright` / `npx mobilewright`)と mobilecli は直接起動�
 | もの | 内容 |
 |---|---|
 | PC | macOS、または Windows 11 |
-| Node.js | 22.12 以上 |
+| Node.js | 22.12 以上(推奨:24.22.3、リポジトリ直下の .nvmrc 参照) |
 | adb | Android SDK の platform-tools。実機だけならこれだけで動く(Mac で確認済み。Windows は未確認) |
 | JDK・Android Studio | エミュレータも使う場合、または adb だけで動かなかった場合 |
 | USB ドライバ | Windows のみ。Pixel は Google USB Driver、ほかは端末メーカーが配布するもの |

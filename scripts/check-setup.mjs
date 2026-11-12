@@ -49,11 +49,12 @@ function readHookInput() {
 const GIT_UPDATE = /\bgit\s+(pull|merge|rebase|checkout|switch|reset|stash\s+pop)\b/;
 
 /**
- * 系列ごとの、既知の脆弱性が修正済みの最低バージョン (2026-10-21 のセキュリティリリース)
- * https://nodejs.org/ja/blog/vulnerability/october-2026-security-releases
+ * 系列ごとの、既知の脆弱性が修正済みの最低バージョン (2026-11-11 のセキュリティリリース)
+ * https://nodejs.org/en/blog/vulnerability/november-2026-security-releases
  * 表に無い系列 (奇数版・EOL) は修正版が出ないので判定しない。新しいリリースが出たら更新する
+ * (24 系を上げたら、推奨版として書いている .nvmrc も合わせて上げる)
  */
-const NODE_SECURE_MIN = { 22: '22.23.4', 24: '24.22.1', 26: '26.12.1' };
+const NODE_SECURE_MIN = { 22: '22.23.5', 24: '24.22.3', 26: '26.13.1' };
 
 const versionLess = (a, b) => {
   const [x, y] = [a, b].map((v) => v.split('.').map(Number));
@@ -61,9 +62,29 @@ const versionLess = (a, b) => {
   return false;
 };
 
-function playwrightCacheDir() {
+/** Node の解決順 (from から上の node_modules を順に探す) で、パッケージのフォルダを見つける */
+function findPackageDir(name, from) {
+  for (let dir = from; ; dir = path.dirname(dir)) {
+    const candidate = path.join(dir, 'node_modules', name);
+    if (fs.existsSync(path.join(candidate, 'package.json'))) return candidate;
+    if (dir === ROOT || dir === path.dirname(dir)) return null;
+  }
+}
+
+/**
+ * Web テストが実際に使う playwright-core (@playwright/test → playwright → playwright-core の順にたどる)。
+ * node_modules 直下の playwright-core を見ないのは、Mobilewright が Playwright を別の版で完全固定していて、
+ * 直下には Mobilewright 用の版が入ることがあるため (Web テストの Chromium と版がずれる)
+ */
+function webPlaywrightCoreDir() {
+  const test = findPackageDir('@playwright/test', ROOT);
+  const pw = test && findPackageDir('playwright', test);
+  return (pw && findPackageDir('playwright-core', pw)) ?? path.join(ROOT, 'node_modules', 'playwright-core');
+}
+
+function playwrightCacheDir(coreDir) {
   const env = process.env.PLAYWRIGHT_BROWSERS_PATH;
-  if (env === '0') return path.join(ROOT, 'node_modules', 'playwright-core', '.local-browsers');
+  if (env === '0') return path.join(coreDir, '.local-browsers');
   if (env) return path.resolve(env);
   if (process.platform === 'darwin') return path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright');
   if (process.platform === 'win32')
@@ -147,17 +168,18 @@ function check() {
   }
 
   // 4. Playwright のブラウザ (依存を入れ直す場合は版が変わるので、無条件でインストールを案内する)
-  const browsersJson = readJson(path.join(ROOT, 'node_modules', 'playwright-core', 'browsers.json'));
+  const coreDir = webPlaywrightCoreDir();
+  const browsersJson = readJson(path.join(coreDir, 'browsers.json'));
   if (depsNeedInstall || lockOutdated || !browsersJson) {
     commands.push('npx playwright install chromium   # 入っていれば数秒で終わる');
   } else {
-    const cache = playwrightCacheDir();
+    const cache = playwrightCacheDir(coreDir);
     const missing = browsersJson.browsers
       .filter((b) => b.name === 'chromium' || b.name === 'chromium-headless-shell')
       .map((b) => `${b.name.replace(/-/g, '_')}-${b.revision}`)
       .filter((dir) => !fs.existsSync(path.join(cache, dir)));
     if (missing.length) {
-      const ver = readJson(path.join(ROOT, 'node_modules', 'playwright-core', 'package.json'))?.version;
+      const ver = readJson(path.join(coreDir, 'package.json'))?.version;
       problems.push(`Playwright ${ver ?? ''} 用の Chromium が未ダウンロードです (${missing.join(', ')})`);
       commands.push('npx playwright install chromium');
     }
