@@ -233,8 +233,10 @@ name属性の命名パターンは camelCase。hidden input が2つあり、
 5. **Finding/Hypothesis との紐付け** — ID が振られたものは必ず `F-YYYYMMDD-NN` 等で参照
 6. セッション開始時に `## Session YYYY-MM-DD (#N)` ヘッダを追記してから書き始める
 7. **旧名からの移行** — `reports/<target-slug>/thinking-log.md`(旧名)があり `decision-log.md` が無い場合は、
-   `git mv` で `decision-log.md` にリネームし、冒頭の説明文を `reports/_template/decision-log.md` のものに差し替えてから追記する。
-   過去のセッションの本文は書き換えない
+   `mv` で `decision-log.md` にリネームし、冒頭の説明文を `reports/_template/decision-log.md` のものに差し替えてから追記する。
+   (`git mv` は使わない。`reports/` は `_template` とホテル例以外 Git 管理外で、`git mv` が失敗するため)
+   過去のセッションの本文は書き換えない。`reports/<target-slug>/commentary/session-*.html` があれば、
+   台本の `src` 中の `thinking-log.md` だけを `decision-log.md` に置き換える(実況の本文・時刻・`kind` は変えない)
 
 ### タイミング
 
