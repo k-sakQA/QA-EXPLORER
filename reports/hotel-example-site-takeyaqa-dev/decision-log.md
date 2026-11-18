@@ -1,9 +1,9 @@
-# Thinking Log
+# Decision Log
 
 Target: `https://hotel-example-site.takeyaqa.dev/ja/reserve.html?plan-id=0`
 
-このファイルには、QA Explorer エージェントの **思考過程** が時系列で記録されます。
-「なぜその観点を選んだか」「何に気づいたか」「どう推論したか」を後から読み返すためのログです。
+このファイルには、QA Explorer エージェントの **テストの判断とその根拠** が時系列で記録されます。
+「どの観点を選んだか」「何を観察したか」「どんな欠陥仮定を立て、結果をどう判定したか」を後から検証するための記録です。
 
 ---
 

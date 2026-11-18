@@ -120,7 +120,7 @@ adb と端末の準備が別に要ります。準備の手順とコマンドの�
 /commentary [target=<target-slug>] [session=<#N | latest>]
 # 例: /commentary target=hotel-example-site-takeyaqa-dev session=#7
 ```
-探索セッションの記録(thinking-log・session-log・findings・bugs)を読み、**実況**(何が起きたか)と
+探索セッションの記録(decision-log・session-log・findings・bugs)を読み、**実況**(何が起きたか)と
 **解説**(なぜそうしたか)の掛け合いにして、ゲーム実況のように再生できる HTML を
 `reports/<target-slug>/commentary/session-<NN>.html` に書き出します。どの観点を選び、何を疑い、
 どこで自分のテストの誤りに気づいたかを時系列で追えます。テストはせず記録を読むだけなので、

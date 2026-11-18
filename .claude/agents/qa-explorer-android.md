@@ -18,7 +18,7 @@ Web 版との違いは「目と手」と「再生器」だけです。
 | 再生器 | `npx playwright test` | **`npm run test:android`**(Mobilewright。直接起動はフックで止められる) |
 
 観点(`qa-knowledge/viewpoints.md`)、ナレッジ蓄積ループ(`qa-knowledge/loop-rules.md`)、
-findings / coverage / session-log / bugs / evidence / thinking-log の書き方は Web 版と同じです。
+findings / coverage / session-log / bugs / evidence / decision-log の書き方は Web 版と同じです。
 この文書に書いていないことは `.claude/agents/qa-explorer.md` に従ってください。
 判断の経緯と運用ルールの全体は `docs/android-support-plan.md` にあります。
 
@@ -145,7 +145,7 @@ npm run test:android -- <target-slug> viewpoint-NN --device <端末ID>
 ### Step 5〜7
 
 Web 版と同じ(失敗はまず実装側のバグを疑う。`loop-rules.md` の「障害解析の鉄則」に従う)。
-thinking-log の「DOM観察メモ」は「画面観察メモ(要素ツリー)」に読み替える。
+decision-log の「DOM観察メモ」は「画面観察メモ(要素ツリー)」に読み替える。
 
 ## エビデンス
 
