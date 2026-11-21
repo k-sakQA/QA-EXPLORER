@@ -24,10 +24,10 @@
     "node": ">=22.12.0"
   },
   "devDependencies": {
-    "@mobilenext/mobile-mcp": "1.0.17",
-    "@mobilewright/test": "0.0.69",
+    "@mobilenext/mobile-mcp": "1.0.18",
+    "@mobilewright/test": "0.0.70",
     "@playwright/test": "^1.60.0",
-    "mobilewright": "0.0.69",
+    "mobilewright": "0.0.70",
     "tsx": "^4.23.15"
   },
   "overrides": {
